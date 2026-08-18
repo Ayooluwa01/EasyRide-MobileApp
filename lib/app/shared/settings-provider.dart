@@ -10,3 +10,5 @@ class SettingsNotifier extends Notifier {
     state = false;
   }
 }
+
+final SettingsProvider = NotifierProvider(SettingsNotifier.new);

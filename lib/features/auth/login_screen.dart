@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
               onPressed: () {
                 ref.read(themeProvider.notifier).toggleTheme();
               },
-              child: const Text('Toggle Theme'),
+              child: const Text('Request Ride'),
             ),
           ],
         ),

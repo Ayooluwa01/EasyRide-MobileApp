@@ -18,6 +18,14 @@ class AppTheme {
       onSurface: AppColors.lightText,
     ),
 
+    // elevatedButtonTheme: ElevatedButtonThemeData(
+    //   style: ElevatedButton.styleFrom(
+    //     backgroundColor: AppColors.primary,
+    //     foregroundColor: AppColors.secondary,
+    //     minimumSize: const Size(double.infinity, 52),
+    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    //   ),
+    // ),
     scaffoldBackgroundColor: AppColors.lightBackground,
   );
 
