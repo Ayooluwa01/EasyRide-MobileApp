@@ -1,12 +1,10 @@
 import 'package:easy_ride/app/router/app_router.dart';
-import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/theme/app_theme.dart';
 import 'app/theme/theme_provider.dart';
-import 'features/auth/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

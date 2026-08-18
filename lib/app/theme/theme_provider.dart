@@ -16,7 +16,7 @@ class ThemeNotifier extends Notifier<ThemeMode> {
     if (savedTheme == 'dark') {
       return ThemeMode.dark;
     }
-    return ThemeMode.light;
+    return ThemeMode.system;
   }
 
   Future<void> toggleTheme() async {

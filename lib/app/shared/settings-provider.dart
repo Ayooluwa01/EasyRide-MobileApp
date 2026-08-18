@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsNotifier extends Notifier {
+class settings_notifier extends Notifier {
+  // static const String _firstlaunch = 'first_launch';
   @override
   build() {
     return true;
@@ -11,4 +12,4 @@ class SettingsNotifier extends Notifier {
   }
 }
 
-final settingsProvider = NotifierProvider(SettingsNotifier.new);
+final settingsProvider = NotifierProvider(settings_notifier.new);

@@ -1,137 +1,304 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:go_router/go_router.dart';
-
-// import '../../../app/theme/theme_provider.dart';
-
-// // class LoginScreen extends ConsumerWidget {
-// //   const LoginScreen({super.key});
-
-// //   @override
-// //   Widget build(BuildContext context, WidgetRef ref) {
-// //     final themeMode = ref.watch(themeProvider);
-
-// //     return Scaffold(
-// //       // appBar: AppBar(title: const Text('Ride App')),
-// //       body: Center(
-// //         child: Column(
-// //           mainAxisAlignment: MainAxisAlignment.center,
-// //           children: [
-// //             Text(themeMode == ThemeMode.light ? 'Light Mode' : 'Dark Mode'),
-
-// //             const SizedBox(height: 20),
-
-// //             ElevatedButton(
-// //               onPressed: () {
-// //                 ref.read(themeProvider.notifier).toggleTheme();
-// //               },
-// //               child: const Text('Request Ride'),
-// //             ),
-// //           ],
-// //         ),
-// //       ),
-// //     );
-// //   }
-// // }
-
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
+import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _numberController;
+
+  @override
+  void initState() {
+    super.initState();
+    _numberController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _numberController.dispose();
+    super.dispose();
+  }
+
+  void goBack() {
+    if (context.canPop()) {
+      ref.read(themeProvider.notifier).toggleTheme();
+      context.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    void goBack() {
-      if (context.canPop()) {
-        context.pop();
-        ref.read(themeProvider.notifier).toggleTheme();
-      }
-    }
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back Button Container
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      spreadRadius: 0,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: goBack,
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.arrow_back_rounded,
-                    color: colorScheme.onSurface,
-                    size: 22,
-                  ),
-                ),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10.0,
               ),
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 1,
-                child: RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.syne(
-                      fontSize: 30,
-                      height: 1.3,
-                      fontWeight: FontWeight.w700,
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Back Button Container
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.3)
+                                : Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        onPressed: goBack,
+                        padding: EdgeInsets.zero,
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colorScheme.onSurface,
+                          size: 22,
+                        ),
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Welcome Title
+                  SizedBox(
+                    width: double.infinity,
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.syne(
+                          fontSize: 30,
+                          height: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "Welcome back to \n",
+                            style: TextStyle(color: colorScheme.onSurface),
+                          ),
+                          TextSpan(
+                            text: "Easy",
+                            style: TextStyle(color: colorScheme.onSurface),
+                          ),
+                          TextSpan(
+                            text: "Ride",
+                            style: TextStyle(color: colorScheme.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Subtitle
+                  Text(
+                    "Enter your phone number to sign in.",
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Label
+                  Text(
+                    "PHONE NUMBER",
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Form & Phone Input Field
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _numberController,
+                          keyboardType: TextInputType.phone,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "800 000 0000",
+                            hintStyle: TextStyle(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        PrimaryButton(
+                          label: "Continue",
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              // Proceed with login logic
+                            }
+                          },
+                          backgroundColor: isDark
+                              ? colorScheme.primary
+                              : colorScheme.secondary,
+                          textColor: isDark
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Create Account Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TextSpan(
-                        text: "Welcome back to \n",
-                        style: TextStyle(color: colorScheme.onSurface),
+                      Text(
+                        "New to Easy Ride?",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
                       ),
-                      TextSpan(
-                        text: "Easy",
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      TextSpan(
-                        text: "Ride",
-                        style: TextStyle(color: colorScheme.primary),
+                      GestureDetector(
+                        onTap: () {
+                          context.push(RouteNames.signup);
+                        },
+                        child: Text(
+                          " Create account",
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ]),
               ),
+            ),
 
-              const SizedBox(height: 12),
-              Text(
-                "Enter your phone number to sign in.",
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  height: 0.3,
-                  color: colorScheme.onSurface,
+            // footer
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 16.0,
+                  left: 20.0,
+                  right: 20.0,
+                ),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: 260,
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          height: 1.5,
+                          letterSpacing: 0.5,
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: "BY CONTINUING, YOU AGREE TO EASY RIDE'S ",
+                          ),
+                          TextSpan(
+                            text: "TERMS OF SERVICE",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                          const TextSpan(text: " & "),
+                          TextSpan(
+                            text: "PRIVACY POLICY",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
