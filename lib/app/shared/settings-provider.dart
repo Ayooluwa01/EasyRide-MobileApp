@@ -11,4 +11,4 @@ class SettingsNotifier extends Notifier {
   }
 }
 
-final SettingsProvider = NotifierProvider(SettingsNotifier.new);
+final settingsProvider = NotifierProvider(SettingsNotifier.new);

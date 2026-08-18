@@ -3,16 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/theme_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+class LoginScreen extends ConsumerWidget {
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ride App')),
-
+      // appBar: AppBar(title: const Text('Ride App')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
