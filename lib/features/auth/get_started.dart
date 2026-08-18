@@ -15,7 +15,9 @@ class GetStarted extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final gradientColors = [
-      colorScheme.primary.withValues(alpha: 0.15),
+      isDark
+          ? colorScheme.primary.withValues(alpha: 0.1)
+          : colorScheme.primary.withValues(alpha: 0.23),
       theme.scaffoldBackgroundColor,
     ];
 
@@ -26,7 +28,7 @@ class GetStarted extends ConsumerWidget {
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
-            radius: 0.7,
+            radius: 0.82,
             colors: gradientColors,
             stops: const [0.0, 0.7],
           ),

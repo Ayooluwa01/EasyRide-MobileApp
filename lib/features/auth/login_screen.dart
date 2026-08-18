@@ -34,6 +34,7 @@
 // //   }
 // // }
 
+import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,7 @@ class LoginScreen extends ConsumerWidget {
     void goBack() {
       if (context.canPop()) {
         context.pop();
+        ref.read(themeProvider.notifier).toggleTheme();
       }
     }
 
