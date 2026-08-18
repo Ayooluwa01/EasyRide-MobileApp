@@ -14,18 +14,21 @@ class GetStarted extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    // Gradient derived cleanly from theme colors
-    final gradientColors = [colorScheme.surface, theme.scaffoldBackgroundColor];
+    final gradientColors = [
+      colorScheme.primary.withValues(alpha: 0.15),
+      theme.scaffoldBackgroundColor,
+    ];
 
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.7,
             colors: gradientColors,
+            stops: const [0.0, 0.7],
           ),
         ),
         child: SafeArea(
@@ -85,7 +88,7 @@ class GetStarted extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 15,
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                       height: 1.4,
                     ),
                   ),
