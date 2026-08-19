@@ -64,7 +64,7 @@ android {
         minSdk = flutter.minSdkVersion
         
         // FIXED: Hardcoded to match the compilation environment targeting level 35
-        targetSdk = 35 
+        targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
