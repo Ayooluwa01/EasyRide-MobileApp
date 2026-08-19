@@ -1,4 +1,5 @@
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/shared/app-activity-provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,6 +78,7 @@ class SplashScreen extends ConsumerWidget {
                       ? colorScheme.onPrimary
                       : colorScheme.onSecondary,
                   onPressed: () {
+                    ref.read(appActivityProvider.notifier).startLoading();
                     context.push(RouteNames.getstarted);
                   },
                 ),

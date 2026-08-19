@@ -123,7 +123,7 @@ class GetStarted extends ConsumerWidget {
                       backgroundColor: colorScheme.surface,
                       foregroundColor: colorScheme.onSurface,
                       side: BorderSide(
-                        color: colorScheme.onSurface.withOpacity(0.12),
+                        color: colorScheme.onSurface.withValues(alpha: 0.12),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -149,7 +149,7 @@ class GetStarted extends ConsumerWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
-                    color: colorScheme.onSurface.withOpacity(0.4),
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ),
                 const SizedBox(height: 8),

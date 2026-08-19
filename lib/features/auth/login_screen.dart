@@ -16,16 +16,19 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _numberController;
+  late final TextEditingController _emailEditingController;
 
   @override
   void initState() {
     super.initState();
     _numberController = TextEditingController();
+    _emailEditingController = TextEditingController();
   }
 
   @override
   void dispose() {
     _numberController.dispose();
+    _emailEditingController.dispose();
     super.dispose();
   }
 
@@ -191,6 +194,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter your phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "EMAIL ADDRESS",
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Email Address input
+                        TextFormField(
+                          controller: _emailEditingController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "yourEmail@gmail.com",
+                            hintStyle: TextStyle(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.1,
+                                ),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your email address';
                             }
                             return null;
                           },
