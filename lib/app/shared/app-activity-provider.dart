@@ -15,7 +15,7 @@ class AppActivityNotifier extends Notifier<bool> {
   void startLoading() {
     _timer?.cancel();
     state = true;
-    _timer = Timer(const Duration(seconds: 3), () {
+    _timer = Timer(const Duration(seconds: 1), () {
       state = false;
     });
   }

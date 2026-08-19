@@ -5,6 +5,19 @@ class SignupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          // IconButton(
+          //   icon: const Icon(Icons.shopping_cart),
+          //   tooltip: 'Open shopping cart',
+          //   onPressed: () {
+
+          //   },
+          // ),
+        ],
+      ),
+      body: SafeArea(child: Center(child: Text("Signup"))),
+    );
   }
 }

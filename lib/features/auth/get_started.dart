@@ -113,12 +113,14 @@ class GetStarted extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Sign In Secondary Button
+                // Sign uo Secondary Button
                 SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      context.push(RouteNames.signup);
+                    },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: colorScheme.surface,
                       foregroundColor: colorScheme.onSurface,
