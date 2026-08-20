@@ -243,6 +243,7 @@ class _ProfileInfoStepState extends State<ProfileInfoStep> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.linear,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: selected
