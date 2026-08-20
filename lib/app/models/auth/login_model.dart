@@ -17,17 +17,17 @@ class LoginResponse {
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      success: json['success'] as bool,
-      message: json['message'] as String,
+      success: json['success'] as bool? ?? true,
+      message: json['message'] as String? ?? "",
     );
   }
 }
 
-class LoginOtpRequest {
+class VerifyLoginOtpRequest {
   final String phone;
   final String code;
 
-  LoginOtpRequest({required this.phone, required this.code});
+  VerifyLoginOtpRequest({required this.phone, required this.code});
   Map<String, dynamic> toJson() {
     return {'phone': phone, 'code': code};
   }
@@ -41,7 +41,7 @@ class LoginOtpResponse {
 
   factory LoginOtpResponse.fromJson(Map<String, dynamic> json) {
     return LoginOtpResponse(
-      success: json['success'] as bool,
+      success: json['success'] as bool? ?? false,
       data: LoginOtpData.fromJson(json['data'] as Map<String, dynamic>),
     );
   }

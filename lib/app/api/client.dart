@@ -17,7 +17,7 @@ class ApiClient {
 
   bool _isRefreshing = false;
 
-  Future<void> _initialize() async {
+  void _initialize() {
     _dio = Dio(
       BaseOptions(
         baseUrl: 'http://10.0.2.2:3000',
@@ -226,6 +226,20 @@ class ApiClient {
     Options? options,
   }) async {
     return await _dio.put(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return await _dio.patch(
       path,
       data: data,
       queryParameters: queryParameters,

@@ -1,29 +1,78 @@
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/models/auth/login_model.dart';
+import 'package:easy_ride/app/models/auth/signup_model.dart';
 
 class AuthService {
   final ApiClient _apiClient = ApiClient();
 
-  // login
-  Future<LoginResponse> login(LoginRequest requestbody) async {
+  // =========================
+  // LOGIN
+  // =========================
+
+  Future<LoginResponse> login(LoginRequest requestBody) async {
     try {
       final response = await _apiClient.post(
         Endpoints.login,
-        data: requestbody.toJson(),
+        data: requestBody.toJson(),
       );
+
       return LoginResponse.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<LoginOtpResponse> verifyLoginOtp(LoginOtpRequest request) async {
-    final response = await _apiClient.post(
-      Endpoints.verifyLoginOtp,
-      data: request.toJson(),
-    );
+  // =========================
+  // VERIFY LOGIN OTP
+  // =========================
 
-    return LoginOtpResponse.fromJson(response.data as Map<String, dynamic>);
+  Future<LoginOtpResponse> verifyLoginOtp(VerifyLoginOtpRequest request) async {
+    try {
+      final response = await _apiClient.post(
+        Endpoints.verifyLoginOtp,
+        data: request.toJson(),
+      );
+
+      return LoginOtpResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // =========================
+  // SIGNUP
+  // =========================
+
+  Future<SignupResponse> signup(SignupRequest request) async {
+    try {
+      final response = await _apiClient.post(
+        Endpoints.signup,
+        data: request.toJson(),
+      );
+
+      return SignupResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // =========================
+  // VERIFY SIGNUP OTP
+  // =========================
+
+  Future<SignupOtpResponse> verifySignupOtp(
+    VerifySignupOtpRequest request,
+  ) async {
+    try {
+      final response = await _apiClient.post(
+        Endpoints.verifySignupOtp,
+        data: request.toJson(),
+      );
+
+      return SignupOtpResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
   }
 }
