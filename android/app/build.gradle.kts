@@ -51,7 +51,7 @@ plugins {
 android {
     namespace = "com.example.easy_ride"
     
-    compileSdk = 35
+    compileSdk =flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -64,7 +64,7 @@ android {
         minSdk = flutter.minSdkVersion
         
         // FIXED: Hardcoded to match the compilation environment targeting level 35
-        targetSdk = 35
+        targetSdk =flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
