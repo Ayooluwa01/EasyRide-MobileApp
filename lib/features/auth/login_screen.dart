@@ -274,7 +274,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           label: "Continue",
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
-                              // Proceed with login logic
+                              context.push(RouteNames.otp);
                             }
                           },
                           backgroundColor: isDark

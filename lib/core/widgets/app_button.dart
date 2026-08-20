@@ -40,8 +40,34 @@ class PrimaryButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             elevation: 0,
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
+          // child: Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     if (icon != null) ...[
+          //       Icon(icon, color: iconColor),
+          //       const SizedBox(width: 8),
+          //     ],
+          //     Flexible(
+          //       child: Text(
+          //         label,
+          //         textAlign: TextAlign.center,
+          //         maxLines: 1,
+          //         overflow: TextOverflow.ellipsis,
+          //         style: GoogleFonts.syne(
+          //           fontSize: 18,
+          //           fontWeight: FontWeight.w800,
+          //           color: textColor,
+          //         ),
+          //       ),
+          //     ),
+          //   ],
+          // ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
@@ -50,8 +76,9 @@ class PrimaryButton extends StatelessWidget {
               ],
               Text(
                 label,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.syne(
-                  fontSize: 18,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: textColor,
                 ),

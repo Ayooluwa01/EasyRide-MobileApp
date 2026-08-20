@@ -1,4 +1,5 @@
 import 'package:easy_ride/features/auth/get_started.dart';
+import 'package:easy_ride/features/auth/otp_screen.dart';
 import 'package:easy_ride/features/auth/signup_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +37,13 @@ final appRouter = GoRouter(
       name: "signup",
       builder: (context, state) {
         return const SignupScreen();
+      },
+    ),
+    GoRoute(
+      path: RouteNames.otp,
+      name: "otp",
+      builder: (context, state) {
+        return const OtpScreen();
       },
     ),
     // GoRoute(
