@@ -51,7 +51,7 @@ plugins {
 android {
     namespace = "com.example.easy_ride"
     
-    compileSdk =flutter.compileSdkVersion
+    compileSdk =37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
