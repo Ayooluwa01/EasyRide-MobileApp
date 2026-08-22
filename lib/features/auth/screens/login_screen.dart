@@ -1,6 +1,8 @@
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
+import 'package:easy_ride/features/auth/models/auth/login_model.dart';
+import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,12 +41,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void login() async {
+    if (_formKey.currentState!.validate()) {
+      final request = LoginRequest(
+        email: _emailEditingController.text.trim(),
+        phone: _numberController.text.trim(),
+      );
+      await ref.read(authControllerProvider.notifier).login(request);
+      // context.push(RouteNames.otp);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
+    final authState = ref.watch(authControllerProvider);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -273,9 +286,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         PrimaryButton(
                           label: "Continue",
                           onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              context.push(RouteNames.otp);
-                            }
+                            login();
                           },
                           backgroundColor: isDark
                               ? colorScheme.primary

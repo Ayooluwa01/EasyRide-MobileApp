@@ -1,10 +1,10 @@
-import 'package:easy_ride/features/auth/steps/contact_info_step.dart';
-import 'package:easy_ride/features/auth/steps/personal_info_step.dart';
+import 'package:easy_ride/features/auth/screens/steps/contact_info_step.dart';
+import 'package:easy_ride/features/auth/screens/steps/personal_info_step.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:easy_ride/features/auth/steps/profile_info_step.dart';
+import 'package:easy_ride/features/auth/screens/steps/profile_info_step.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});

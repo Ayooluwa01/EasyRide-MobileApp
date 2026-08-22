@@ -1,9 +1,9 @@
-import 'package:easy_ride/features/auth/get_started.dart';
-import 'package:easy_ride/features/auth/otp_screen.dart';
-import 'package:easy_ride/features/auth/signup_screen.dart';
+import 'package:easy_ride/features/auth/screens/get_started.dart';
+import 'package:easy_ride/features/auth/screens/otp_screen.dart';
+import 'package:easy_ride/features/auth/screens/signup_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/auth/login_screen.dart';
+import '../../features/auth/screens/login_screen.dart';
 import 'route_names.dart';
 
 final appRouter = GoRouter(

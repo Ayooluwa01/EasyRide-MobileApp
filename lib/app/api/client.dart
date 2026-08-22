@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
+import 'package:easy_ride/app/api/error_exception.dart';
+import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
-  ApiClient._internal() {
+  ApiClient(this.ref) {
     _initialize();
   }
 
-  static final ApiClient _instance = ApiClient._internal();
-  factory ApiClient() => _instance;
+  final Ref ref;
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   late final Dio _dio;
   late final Dio _refreshDio;
@@ -18,22 +20,21 @@ class ApiClient {
   bool _isRefreshing = false;
 
   void _initialize() {
+    const String baseUrl = 'http://127.0.0.1:3000';
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'http://10.0.2.2:3000',
-        connectTimeout: const Duration(seconds: 40),
-        receiveTimeout: const Duration(seconds: 40),
-        sendTimeout: const Duration(seconds: 40),
+        baseUrl: baseUrl,
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': '69420',
         },
       ),
     );
 
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: 'http://10.0.2.2:3000',
+        baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 40),
         receiveTimeout: const Duration(seconds: 40),
         sendTimeout: const Duration(seconds: 40),
@@ -52,6 +53,9 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest:
             (RequestOptions options, RequestInterceptorHandler handler) async {
+              print('➡️ ${options.method} ${options.baseUrl}${options.path}');
+              print('➡️ Headers: ${options.headers}');
+              print('➡️ Body: ${options.data}');
               try {
                 final token = await secureStorage.read(key: _accessTokenKey);
                 final isAuthRequest = AuthRoutes.isAuthRoute(options.path);
@@ -80,28 +84,27 @@ class ApiClient {
           final statusCode = error.response?.statusCode;
 
           if (statusCode != 401) {
-            handler.next(error);
+            handler.next(_unwrap(error));
             return;
           }
 
           final request = error.requestOptions;
-
           final alreadyRetried = request.extra['alreadyRetried'] == true;
 
           if (alreadyRetried) {
             await _logout();
-            handler.next(error);
+            handler.next(_unwrap(error));
             return;
           }
 
           if (request.path.contains('/auth/refresh')) {
             await _logout();
-            handler.next(error);
+            handler.next(_unwrap(error));
             return;
           }
 
           if (_isRefreshing) {
-            handler.next(error);
+            handler.next(_unwrap(error));
             return;
           }
 
@@ -111,21 +114,18 @@ class ApiClient {
             final newAccessToken = await _refreshAccessToken();
             if (newAccessToken == null || newAccessToken.isEmpty) {
               await _logout();
-              handler.next(error);
+              handler.next(_unwrap(error));
               return;
             }
 
             request.extra['alreadyRetried'] = true;
-
             request.headers['Authorization'] = 'Bearer $newAccessToken';
 
-            // Retry original request.
             final response = await _dio.fetch(request);
             handler.resolve(response);
           } catch (e) {
             await _logout();
-
-            handler.next(error);
+            handler.next(_unwrap(error));
           } finally {
             _isRefreshing = false;
           }
@@ -184,27 +184,31 @@ class ApiClient {
     await secureStorage.delete(key: _refreshTokenKey);
   }
 
-  // // --------------------------------------------------
-  // // MANUAL LOGOUT
-  // // --------------------------------------------------
-
-  // Future<void> logout() async {
-  //   await _logout();
-  // }
-
+  // --------------------------------------------------
   // HELPERS
+  // --------------------------------------------------
+
   Future<Response> post(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    return await _dio.post(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+    try {
+      return await _dio.post(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      if (e.error is AppException) {
+        final err = e.error as AppException;
+        ref.read(appToastProvider.notifier).showError(err.message);
+        throw err;
+      }
+      rethrow;
+    }
   }
 
   Future<Response> get(
@@ -212,11 +216,20 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    return await _dio.get(
-      path,
-      queryParameters: queryParameters,
-      options: options,
-    );
+    try {
+      return await _dio.get(
+        path,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      if (e.error is AppException) {
+        final err = e.error as AppException;
+        ref.read(appToastProvider.notifier).showError(err.message);
+        throw err;
+      }
+      rethrow;
+    }
   }
 
   Future<Response> put(
@@ -225,12 +238,21 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    return await _dio.put(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+    try {
+      return await _dio.put(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      if (e.error is AppException) {
+        final err = e.error as AppException;
+        ref.read(appToastProvider.notifier).showError(err.message);
+        throw err;
+      }
+      rethrow;
+    }
   }
 
   Future<Response> patch(
@@ -239,12 +261,21 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    return await _dio.patch(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    );
+    try {
+      return await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      if (e.error is AppException) {
+        final err = e.error as AppException;
+        ref.read(appToastProvider.notifier).showError(err.message);
+        throw err;
+      }
+      rethrow;
+    }
   }
 
   Future<Response> delete(
@@ -253,11 +284,46 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    return await _dio.delete(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
+    try {
+      return await _dio.delete(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      if (e.error is AppException) {
+        final err = e.error as AppException;
+        ref.read(appToastProvider.notifier).showError(err.message);
+        throw err;
+      }
+      rethrow;
+    }
+  }
+
+  DioException _unwrap(DioException error) {
+    final data = error.response?.data;
+    String message = 'Something went wrong. Please try again.';
+
+    if (data is Map<String, dynamic> &&
+        data['error'] is Map<String, dynamic> &&
+        data['error']['message'] != null) {
+      message = data['error']['message'] as String;
+    } else if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout) {
+      message = 'Connection timed out. Please check your internet.';
+    } else if (error.type == DioExceptionType.connectionError) {
+      message = 'Could not connect to the server.';
+    }
+
+    return DioException(
+      requestOptions: error.requestOptions,
+      response: error.response,
+      type: error.type,
+      error: AppException(message, statusCode: error.response?.statusCode),
     );
   }
 }
+
+final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref));

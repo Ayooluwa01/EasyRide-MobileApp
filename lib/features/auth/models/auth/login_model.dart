@@ -36,12 +36,15 @@ class VerifyLoginOtpRequest {
 class LoginOtpResponse {
   final bool success;
   final LoginOtpData data;
+  final String? message;
 
-  LoginOtpResponse({required this.success, required this.data});
+  LoginOtpResponse({required this.success, required this.data, this.message});
 
   factory LoginOtpResponse.fromJson(Map<String, dynamic> json) {
     return LoginOtpResponse(
       success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+
       data: LoginOtpData.fromJson(json['data'] as Map<String, dynamic>),
     );
   }

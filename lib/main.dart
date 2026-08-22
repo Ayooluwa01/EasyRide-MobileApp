@@ -3,6 +3,7 @@ import 'package:easy_ride/features/wrapper/preloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toastification/toastification.dart';
 
 import 'app/theme/app_theme.dart';
 import 'app/theme/theme_provider.dart';
@@ -27,17 +28,19 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
 
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'Easy Ride',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
-      routerConfig: appRouter,
+    return ToastificationWrapper(
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: 'Easy Ride',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
+        routerConfig: appRouter,
 
-      builder: (context, child) {
-        return Preloader(child: child ?? const SizedBox.shrink());
-      },
+        builder: (context, child) {
+          return Preloader(child: child ?? const SizedBox.shrink());
+        },
+      ),
     );
   }
 }

@@ -1,12 +1,14 @@
 class Endpoints {
-  static const refreshToken = 'auth/refreshToken';
-  static const login = '/auth/login/otp/request';
-  static const verifyLoginOtp = '/auth/login/verify';
-  static const signup = '/auth/signup/otp/request';
-  static const verifySignupOtp = '/auth/signup/otp/verify';
-  static const resendOtp = '/auth/otp/resend';
-  static const requestPhoneNumberChange = '/auth/phone/request-change';
-  static const verifyPhoneNumberChange = '/auth/phone/confirm-change';
+  static const String checkPhone = '/auth/check-phone';
+  static const String signup = '/auth/signup/otp/request';
+  static const String verifySignupOtp = '/auth/signup/otp/verify';
+  static const String login = '/auth/login/otp/request';
+  static const String verifyLoginOtp = '/auth/login/otp/verify';
+  static const String resendOtp = '/auth/otp/resend';
+  static const String refreshToken = '/auth/refresh';
+  static const String logout = '/auth/logout';
+  static const String requestPhoneNumberChange = '/auth/phone/request-change';
+  static const String verifyPhoneNumberChange = '/auth/phone/confirm-change';
 }
 
 class AuthRoutes {

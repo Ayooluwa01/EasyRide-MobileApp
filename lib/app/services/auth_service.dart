@@ -1,10 +1,15 @@
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
-import 'package:easy_ride/app/models/auth/login_model.dart';
-import 'package:easy_ride/app/models/auth/signup_model.dart';
+import 'package:easy_ride/features/auth/models/auth/login_model.dart';
+import 'package:easy_ride/features/auth/models/auth/signup_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthService {
-  final ApiClient _apiClient = ApiClient();
+  // final ApiClient _apiClient = ApiClient();
+  final Ref ref;
+  AuthService(this.ref);
+
+  ApiClient get _apiClient => ref.read(apiClientProvider);
 
   // =========================
   // LOGIN
@@ -16,7 +21,6 @@ class AuthService {
         Endpoints.login,
         data: requestBody.toJson(),
       );
-
       return LoginResponse.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       rethrow;

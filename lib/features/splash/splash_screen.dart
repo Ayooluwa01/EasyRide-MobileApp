@@ -79,7 +79,7 @@ class SplashScreen extends ConsumerWidget {
                       ? colorScheme.onPrimary
                       : colorScheme.onSecondary,
                   onPressed: () {
-                    ref.read(appActivityProvider.notifier).startLoading();
+                    // ref.read(appActivityProvider.notifier).startLoading();
                     context.push(RouteNames.getstarted);
                   },
                 ),

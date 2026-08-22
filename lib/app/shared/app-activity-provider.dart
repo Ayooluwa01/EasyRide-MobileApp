@@ -30,3 +30,47 @@ class AppActivityNotifier extends Notifier<bool> {
 final appActivityProvider = NotifierProvider<AppActivityNotifier, bool>(
   AppActivityNotifier.new,
 );
+
+enum ToastType { success, error, info }
+
+class ToastData {
+  final String message;
+  final ToastType type;
+
+  const ToastData({required this.message, required this.type});
+}
+
+class AppToastNotifier extends Notifier<ToastData?> {
+  Timer? _timer;
+
+  @override
+  ToastData? build() {
+    ref.onDispose(() {
+      _timer?.cancel();
+    });
+    return null;
+  }
+
+  void showError(String message) => _show(message, ToastType.error);
+
+  void showSuccess(String message) => _show(message, ToastType.success);
+
+  void showInfo(String message) => _show(message, ToastType.info);
+
+  void _show(String message, ToastType type) {
+    _timer?.cancel();
+    state = ToastData(message: message, type: type);
+    _timer = Timer(const Duration(seconds: 6), () {
+      state = null;
+    });
+  }
+
+  void dismiss() {
+    _timer?.cancel();
+    state = null;
+  }
+}
+
+final appToastProvider = NotifierProvider<AppToastNotifier, ToastData?>(
+  AppToastNotifier.new,
+);
