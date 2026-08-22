@@ -1,6 +1,7 @@
 // ignore: file_names
 import 'dart:async';
 
+import 'package:easy_ride/app/models/toast_notification_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AppActivityNotifier extends Notifier<bool> {
@@ -30,15 +31,6 @@ class AppActivityNotifier extends Notifier<bool> {
 final appActivityProvider = NotifierProvider<AppActivityNotifier, bool>(
   AppActivityNotifier.new,
 );
-
-enum ToastType { success, error, info }
-
-class ToastData {
-  final String message;
-  final ToastType type;
-
-  const ToastData({required this.message, required this.type});
-}
 
 class AppToastNotifier extends Notifier<ToastData?> {
   Timer? _timer;

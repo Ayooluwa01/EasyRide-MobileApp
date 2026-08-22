@@ -1,3 +1,4 @@
+import 'package:easy_ride/app/models/toast_notification_model.dart';
 import 'package:easy_ride/app/shared/app-activity-provider.dart';
 import 'package:easy_ride/app/theme/app_colors.dart';
 import 'package:flutter/material.dart';

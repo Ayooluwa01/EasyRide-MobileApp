@@ -1,4 +1,6 @@
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
@@ -47,7 +49,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailEditingController.text.trim(),
         phone: _numberController.text.trim(),
       );
-      await ref.read(authControllerProvider.notifier).login(request);
+      try {
+        final response = await ref
+            .read(authControllerProvider.notifier)
+            .login(request);
+        if (mounted && response != null) {
+          ref
+              .read(appToastProvider.notifier)
+              .showSuccess("Otp sent to your email");
+          ref.read(loginRequestProvider.notifier).state = request;
+          context.push(RouteNames.otp);
+        }
+      } catch (e) {}
       // context.push(RouteNames.otp);
     }
   }

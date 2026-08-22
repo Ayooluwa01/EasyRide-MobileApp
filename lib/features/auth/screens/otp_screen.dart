@@ -1,26 +1,35 @@
 import 'dart:async';
 
+import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/core/widgets/back_button.dart';
+import 'package:easy_ride/features/auth/models/auth/login_model.dart';
+import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
+import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen>
+class _OtpScreenState extends ConsumerState<OtpScreen>
     with SingleTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
+  final TextEditingController _pinController = TextEditingController();
+
   Timer? _timer;
   int _remainingSeconds = 60;
   late AnimationController _otpAnimationController;
   late Animation<double> _otpFadeAnimation;
   late Animation<Offset> _otpSlideAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -65,8 +74,59 @@ class _OtpScreenState extends State<OtpScreen>
     });
   }
 
+  void verifyOtp() {
+    if (formKey.currentState!.validate()) {
+      final loginData = ref.read(loginRequestProvider);
+
+      final request = VerifyLoginOtpRequest(
+        phone: loginData?.phone ?? '',
+        code: _pinController.text.trim(),
+      );
+
+      ref.read(authControllerProvider.notifier).verifyLogin(request);
+    }
+  }
+
+  void handleResendOtp() async {
+    final loginData = ref.read(loginRequestProvider);
+    final phone = loginData?.phone ?? '';
+
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone number not found. Please re-enter.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final request = OtpRequestModel(phone: phone);
+      final response = await ref
+          .read(authControllerProvider.notifier)
+          .resendOtp(request);
+
+      startTimer();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.message.isNotEmpty
+                  ? response.message
+                  : 'OTP sent successfully!',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      // Errors handled reactive via state or fallback snackbar
+    }
+  }
+
   @override
   void dispose() {
+    _pinController.dispose();
     _otpAnimationController.dispose();
     _timer?.cancel();
     super.dispose();
@@ -74,9 +134,24 @@ class _OtpScreenState extends State<OtpScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<LoginOtpResponse?>>(authControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (next.hasError) {
+      } else if (next.hasValue && next.value != null) {
+        ref
+            .watch(appToastProvider.notifier)
+            .showSuccess("Otp resent successfully");
+      }
+    });
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+
+    final loginData = ref.watch(loginRequestProvider);
+    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -96,7 +171,7 @@ class _OtpScreenState extends State<OtpScreen>
                           const SizedBox(height: 10),
 
                           // Back button
-                          AppBackButton(),
+                          const AppBackButton(),
                           const SizedBox(height: 35),
 
                           // Title
@@ -112,9 +187,8 @@ class _OtpScreenState extends State<OtpScreen>
 
                           const SizedBox(height: 12),
 
-                          // Description
                           Text(
-                            "We've sent a code to +234 812 *** 6789",
+                            'We\'ve sent a code to ${loginData?.phone ?? loginData?.email ?? "your device"}',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: colorScheme.onSurface.withValues(
@@ -125,9 +199,7 @@ class _OtpScreenState extends State<OtpScreen>
 
                           const SizedBox(height: 42),
 
-                          // ─────────────────────────
-                          // OTP
-                          // ─────────────────────────
+                          // Form & OTP Input
                           Form(
                             key: formKey,
                             child: Column(
@@ -139,11 +211,10 @@ class _OtpScreenState extends State<OtpScreen>
                                       position: _otpSlideAnimation,
                                       child: Center(
                                         child: Pinput(
+                                          controller: _pinController,
                                           length: 4,
-
                                           hapticFeedbackType:
                                               HapticFeedbackType.vibrate,
-
                                           defaultPinTheme: PinTheme(
                                             width: 80,
                                             height: 80,
@@ -162,19 +233,13 @@ class _OtpScreenState extends State<OtpScreen>
                                               ),
                                             ),
                                           ),
-
                                           separatorBuilder: (index) =>
                                               const SizedBox(width: 16),
-
-                                          pinputAutovalidateMode:
-                                              PinputAutovalidateMode.onSubmit,
-
                                           validator: (pin) {
-                                            if (pin == '2224') {
-                                              return null;
+                                            if (pin == null || pin.length < 4) {
+                                              return 'Please enter 4 digits';
                                             }
-
-                                            return 'Pin is incorrect';
+                                            return null;
                                           },
                                         ),
                                       ),
@@ -204,9 +269,7 @@ class _OtpScreenState extends State<OtpScreen>
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(8),
                                     onTap: _remainingSeconds == 0
-                                        ? () {
-                                            startTimer();
-                                          }
+                                        ? handleResendOtp
                                         : null,
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -257,19 +320,17 @@ class _OtpScreenState extends State<OtpScreen>
 
                                 const SizedBox(height: 30),
 
-                                // ─────────────────────────
                                 // VERIFY BUTTON
-                                // ─────────────────────────
                                 Center(
                                   child: SizedBox(
                                     width: double.infinity,
                                     child: PrimaryButton(
-                                      label: 'Verify & Create Account',
-                                      onPressed: () {
-                                        if (formKey.currentState!.validate()) {
-                                          // context.push(RouteNames.otp);
-                                        }
-                                      },
+                                      label: authState.isLoading
+                                          ? 'Verifying...'
+                                          : 'Verify & Create Account',
+                                      onPressed: authState.isLoading
+                                          ? () {}
+                                          : verifyOtp,
                                       backgroundColor: isDark
                                           ? colorScheme.primary
                                           : colorScheme.secondary,
@@ -286,9 +347,7 @@ class _OtpScreenState extends State<OtpScreen>
                       ),
                     ),
 
-                    // ─────────────────────────────
                     // FOOTER
-                    // ─────────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16, top: 30),
                       child: SizedBox(

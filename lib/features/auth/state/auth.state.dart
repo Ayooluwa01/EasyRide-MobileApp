@@ -1,13 +1,11 @@
 import 'dart:async';
+import 'package:easy_ride/app/services/auth_service.dart';
 import 'package:easy_ride/app/shared/app-activity-provider.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:easy_ride/app/services/auth_service.dart';
+import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
 import 'package:easy_ride/features/auth/models/auth/signup_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-// final authServiceProvider = Provider<AuthService>((ref) => AuthService());
-final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
 class AuthController extends AsyncNotifier<LoginOtpResponse?> {
   static const String _accessTokenKey = 'access-token';
@@ -21,26 +19,25 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
     return null;
   }
 
+  // =========================
+  // LOGIN
+  // =========================
   Future<LoginResponse?> login(LoginRequest request) async {
     _preloader.startLoading();
-    state = const AsyncValue.loading();
     try {
-      LoginResponse? response;
-      state = await AsyncValue.guard(() async {
-        final authService = ref.read(authServiceProvider);
-        response = await authService.login(request);
-      });
-
-      if (state.hasError) {
-        throw state.error!;
-      }
-
-      return response;
+      final authService = ref.read(authServiceProvider);
+      return await authService.login(request);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow;
     } finally {
       _preloader.stopLoading();
     }
   }
 
+  // =========================
+  // VERIFY LOGIN OTP
+  // =========================
   Future<LoginOtpResponse> verifyLogin(VerifyLoginOtpRequest request) async {
     _preloader.startLoading();
     state = const AsyncValue.loading();
@@ -51,7 +48,7 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
         final authService = ref.read(authServiceProvider);
         response = await authService.verifyLoginOtp(request);
 
-        // Uncomment when ready to write tokens
+        // Uncomment when ready to store tokens:
         // await _secureStorage.write(
         //   key: _accessTokenKey,
         //   value: response.data.accessToken,
@@ -69,8 +66,6 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
       }
 
       return response;
-    } catch (e, stackTrace) {
-      rethrow;
     } finally {
       _preloader.stopLoading();
     }
@@ -84,8 +79,7 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
     try {
       final authService = ref.read(authServiceProvider);
       return await authService.signup(request);
-    } catch (e, stackTrace) {
-      print(e);
+    } catch (e) {
       rethrow;
     } finally {
       _preloader.stopLoading();
@@ -105,7 +99,7 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
         final authService = ref.read(authServiceProvider);
         response = await authService.verifySignupOtp(request);
 
-        // Uncomment when ready to write tokens
+        // Uncomment when ready to store tokens:
         // await _secureStorage.write(
         //   key: _accessTokenKey,
         //   value: response.data.accessToken,
@@ -130,7 +124,24 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
       }
 
       return response;
-    } catch (e, stackTrace) {
+    } finally {
+      _preloader.stopLoading();
+    }
+  }
+
+  // =========================
+  // RESEND OTP
+  // =========================
+  Future<OtpResponseModel> resendOtp(OtpRequestModel request) async {
+    _preloader.startLoading();
+    late OtpResponseModel response;
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      response = await authService.resendOtp(request);
+      return response;
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
       rethrow;
     } finally {
       _preloader.stopLoading();
@@ -142,3 +153,5 @@ final authControllerProvider =
     AsyncNotifierProvider<AuthController, LoginOtpResponse?>(
       AuthController.new,
     );
+
+// Models
