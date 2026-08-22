@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/shared/app-activity-provider.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
@@ -9,6 +10,7 @@ import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
 import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 
@@ -74,17 +76,26 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     });
   }
 
-  void verifyOtp() {
-    if (formKey.currentState!.validate()) {
-      final loginData = ref.read(loginRequestProvider);
+  void verifyOtp() async {
+    context.go(RouteNames.rider);
 
-      final request = VerifyLoginOtpRequest(
-        phone: loginData?.phone ?? '',
-        code: _pinController.text.trim(),
-      );
+    // if (formKey.currentState!.validate()) {
+    //   final loginData = ref.read(loginRequestProvider);
+    //   final request = VerifyLoginOtpRequest(
+    //     phone: loginData?.phone ?? '',
+    //     code: _pinController.text.trim(),
+    //   );
 
-      ref.read(authControllerProvider.notifier).verifyLogin(request);
-    }
+    //   try {
+    //     final success = await ref
+    //         .read(authControllerProvider.notifier)
+    //         .verifyLogin(request);
+
+    //     if (success.success && mounted) {
+    //       context.go(RouteNames.riderhomescreen);
+    //     }
+    //   } catch (_) {}
+    // }
   }
 
   void handleResendOtp() async {
@@ -92,11 +103,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     final phone = loginData?.phone ?? '';
 
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone number not found. Please re-enter.'),
-        ),
-      );
+      ref.read(appToastProvider.notifier).showError('Phone number not found.');
       return;
     }
 
@@ -109,18 +116,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
       startTimer();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        ref
+            .read(appToastProvider.notifier)
+            .showSuccess(
               response.message.isNotEmpty
                   ? response.message
-                  : 'OTP sent successfully!',
-            ),
-          ),
-        );
+                  : 'OTP resent successfully',
+            );
       }
-    } catch (_) {
-      // Errors handled reactive via state or fallback snackbar
+    } catch (e) {
+      if (mounted) {}
     }
   }
 

@@ -5,4 +5,6 @@ class RouteNames {
   static const signup = '/signup';
   static const home = '/home';
   static const otp = '/otp';
+  static const riderhomescreen = '/riderhomescreen';
+  static const rider = '/rider';
 }

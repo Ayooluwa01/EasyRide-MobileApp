@@ -1,6 +1,8 @@
+import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
+import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -46,14 +48,20 @@ final appRouter = GoRouter(
         return const OtpScreen();
       },
     ),
-    // GoRoute(
-    //   path: RouteNames.register,
-    //   name: 'register',
-    //   builder: (context, state) {
-    //     return const RegisterScreen();
-    //   },
-    // ),
-
+    GoRoute(
+      path: RouteNames.riderhomescreen,
+      name: 'riderhomescreen',
+      builder: (context, state) {
+        return const RiderHomeScreen();
+      },
+    ),
+    GoRoute(
+      path: RouteNames.rider,
+      name: 'rider',
+      builder: (context, state) {
+        return const BottomNav();
+      },
+    ),
     // GoRoute(
     //   path: RouteNames.home,
     //   name: 'home',

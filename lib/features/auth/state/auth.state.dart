@@ -139,6 +139,7 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
     try {
       final authService = ref.read(authServiceProvider);
       response = await authService.resendOtp(request);
+      print(" otp-response:${response}");
       return response;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

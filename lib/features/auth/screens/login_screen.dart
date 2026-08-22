@@ -44,25 +44,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void login() async {
-    if (_formKey.currentState!.validate()) {
-      final request = LoginRequest(
-        email: _emailEditingController.text.trim(),
-        phone: _numberController.text.trim(),
-      );
-      try {
-        final response = await ref
-            .read(authControllerProvider.notifier)
-            .login(request);
-        if (mounted && response != null) {
-          ref
-              .read(appToastProvider.notifier)
-              .showSuccess("Otp sent to your email");
-          ref.read(loginRequestProvider.notifier).state = request;
-          context.push(RouteNames.otp);
-        }
-      } catch (e) {}
-      // context.push(RouteNames.otp);
-    }
+    context.push(RouteNames.otp);
+
+    // if (_formKey.currentState!.validate()) {
+    //   final request = LoginRequest(
+    //     email: _emailEditingController.text.trim(),
+    //     phone: _numberController.text.trim(),
+    //   );
+    //   try {
+    //     final response = await ref
+    //         .read(authControllerProvider.notifier)
+    //         .login(request);
+    //     if (mounted && response != null) {
+    //       ref
+    //           .read(appToastProvider.notifier)
+    //           .showSuccess("Otp sent to your email");
+    //       ref.read(loginRequestProvider.notifier).state = request;
+    //       context.push(RouteNames.otp);
+    //     }
+    //   } catch (e) {}
+    //   // context.push(RouteNames.otp);
+    // }
   }
 
   @override
