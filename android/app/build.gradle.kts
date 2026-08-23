@@ -5,7 +5,7 @@
 // }
 
 // android {
-//     namespace = "com.example.easy_ride"
+//     namespace = "com.aytech.easyride"
 //     compileSdk = flutter.
 //     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@
 
 //     defaultConfig {
 //         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-//         applicationId = "com.example.easy_ride"
+//         applicationId = "com.aytech.easyride"
 //         // You can update the following values to match your application needs.
 //         // For more information, see: https://flutter.dev/to/review-gradle-config.
 //         minSdk = flutter.minSdkVersion
@@ -49,7 +49,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.easy_ride"
+    namespace = "com.aytech.easyride"
     
     compileSdk =37
     ndkVersion = flutter.ndkVersion
@@ -60,7 +60,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.easy_ride"
+        applicationId = "com.aytech.easyride"
         minSdk = flutter.minSdkVersion
         
         // FIXED: Hardcoded to match the compilation environment targeting level 35

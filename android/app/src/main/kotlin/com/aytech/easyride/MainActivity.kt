@@ -1,4 +1,4 @@
-package com.example.easy_ride
+package com.aytech.easyride
 
 import io.flutter.embedding.android.FlutterActivity
 
