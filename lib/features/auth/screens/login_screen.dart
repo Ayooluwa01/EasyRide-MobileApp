@@ -1,9 +1,6 @@
 import 'package:easy_ride/app/router/route_names.dart';
-import 'package:easy_ride/app/shared/app-activity-provider.dart';
-import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
-import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
