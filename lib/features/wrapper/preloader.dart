@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:easy_ride/app/models/toast_notification_model.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/theme/app_colors.dart';
@@ -6,13 +9,60 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 
-class Preloader extends ConsumerWidget {
+class Preloader extends ConsumerStatefulWidget {
   final Widget child;
+  final Duration timeoutDuration;
 
-  const Preloader({super.key, required this.child});
+  const Preloader({
+    super.key,
+    required this.child,
+    this.timeoutDuration = const Duration(seconds: 300),
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Preloader> createState() => _PreloaderState();
+}
+
+class _PreloaderState extends ConsumerState<Preloader> {
+  Timer? _inactivityTimer;
+  bool _isInactive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(widget.timeoutDuration, _handleTimeout);
+  }
+
+  void _resetTimer() {
+    if (_isInactive) {
+      setState(() {
+        _isInactive = false;
+      });
+    }
+    _startTimer();
+  }
+
+  void _handleTimeout() {
+    if (mounted) {
+      setState(() {
+        _isInactive = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isLoading = ref.watch(appActivityProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -22,20 +72,47 @@ class Preloader extends ConsumerWidget {
       _showThemedToast(context, next);
     });
 
-    return Stack(
-      children: [
-        child,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _resetTimer(),
+      onPointerMove: (_) => _resetTimer(),
+      onPointerHover: (_) => _resetTimer(),
+      child: Stack(
+        children: [
+          widget.child,
 
-        if (isLoading)
-          Positioned.fill(
-            child: ColoredBox(
-              color: theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
-              child: Center(
-                child: CircularProgressIndicator(color: colorScheme.primary),
+          // Inactivity Blur Layer
+          if (_isInactive) ...[
+            Positioned.fill(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: 5.0),
+                duration: const Duration(milliseconds: 300),
+                builder: (context, blurValue, child) {
+                  return BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: blurValue,
+                      sigmaY: blurValue,
+                    ),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.15),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-      ],
+          ],
+          // Loading Indicator Layer
+          if (isLoading)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.scaffoldBackgroundColor.withValues(alpha: 0.7),
+                child: Center(
+                  child: CircularProgressIndicator(color: colorScheme.primary),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

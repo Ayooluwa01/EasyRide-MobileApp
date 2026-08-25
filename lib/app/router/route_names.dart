@@ -7,4 +7,5 @@ class RouteNames {
   static const otp = '/otp';
   static const riderhomescreen = '/riderhomescreen';
   static const rider = '/rider';
+  static const riderpersonalprofile = '/riderpersonalprofile';
 }

@@ -1,4 +1,7 @@
+import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/core/widgets/option_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class RiderProfileScreen extends StatelessWidget {
@@ -136,13 +139,17 @@ class RiderProfileScreen extends StatelessWidget {
                                 color: Color(0xFF4CAF50),
                               ),
                               SizedBox(width: 4),
-                              Text(
-                                '4.98 RIDER',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4CAF50),
-                                  letterSpacing: 0.5,
+                              Center(
+                                child: Text(
+                                  textAlign: TextAlign.center,
+                                  '4.98 RIDER',
+                                  style: TextStyle(
+                                    fontSize: 10,
+
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF4CAF50),
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                             ],
@@ -160,10 +167,12 @@ class RiderProfileScreen extends StatelessWidget {
               const _SectionHeader(title: "ACCOUNT"),
               _SettingsGroupCard(
                 children: [
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.person_outline_rounded,
                     label: "Personal Information",
-                    onTap: () {},
+                    onTap: () {
+                      context.push(RouteNames.riderpersonalprofile);
+                    },
                   ),
                   const Divider(
                     height: 1,
@@ -171,7 +180,7 @@ class RiderProfileScreen extends StatelessWidget {
                     indent: 48,
                     color: Color.fromARGB(26, 204, 201, 201),
                   ),
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.account_balance_wallet_outlined,
                     label: "Payment Methods",
                     onTap: () {},
@@ -184,7 +193,7 @@ class RiderProfileScreen extends StatelessWidget {
               const _SectionHeader(title: "PREFERENCES"),
               _SettingsGroupCard(
                 children: [
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.notifications_none_rounded,
                     label: "Notifications",
                     onTap: () {},
@@ -195,7 +204,7 @@ class RiderProfileScreen extends StatelessWidget {
                     indent: 48,
                     color: Color.fromARGB(26, 204, 201, 201),
                   ),
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.shield_outlined,
                     label: "Privacy & Security",
                     onTap: () {},
@@ -208,7 +217,7 @@ class RiderProfileScreen extends StatelessWidget {
               const _SectionHeader(title: "SUPPORT"),
               _SettingsGroupCard(
                 children: [
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.help_outline_rounded,
                     label: "Help Center",
                     onTap: () {},
@@ -219,7 +228,7 @@ class RiderProfileScreen extends StatelessWidget {
                     indent: 48,
                     color: Color.fromARGB(26, 204, 201, 201),
                   ),
-                  _OptionTile(
+                  OptionTile(
                     icon: Icons.info_outline_rounded,
                     label: "About GidiRide",
                     onTap: () {},
@@ -290,43 +299,6 @@ class _SettingsGroupCard extends StatelessWidget {
 }
 
 // Reusable Tile Widget
-class _OptionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  const _OptionTile({required this.icon, required this.label, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F4F6),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, size: 18, color: Colors.grey.shade700),
-      ),
-      title: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        size: 18,
-        color: Colors.grey,
-      ),
-    );
-  }
-}
 
 // Sign Out Button (rounded white card, red label + icon)
 class _SignOutButton extends StatelessWidget {
