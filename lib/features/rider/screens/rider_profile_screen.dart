@@ -183,7 +183,9 @@ class RiderProfileScreen extends StatelessWidget {
                   OptionTile(
                     icon: Icons.account_balance_wallet_outlined,
                     label: "Payment Methods",
-                    onTap: () {},
+                    onTap: () {
+                      context.push(RouteNames.riderpaymentinformation);
+                    },
                   ),
                 ],
               ),
@@ -196,7 +198,9 @@ class RiderProfileScreen extends StatelessWidget {
                   OptionTile(
                     icon: Icons.notifications_none_rounded,
                     label: "Notifications",
-                    onTap: () {},
+                    onTap: () {
+                      context.push(RouteNames.ridernotification);
+                    },
                   ),
                   const Divider(
                     height: 1,

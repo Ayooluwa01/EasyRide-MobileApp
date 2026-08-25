@@ -8,4 +8,6 @@ class RouteNames {
   static const riderhomescreen = '/riderhomescreen';
   static const rider = '/rider';
   static const riderpersonalprofile = '/riderpersonalprofile';
+  static const riderpaymentinformation = '/riderpaymentinformation';
+  static const ridernotification = '/ridernotification';
 }
