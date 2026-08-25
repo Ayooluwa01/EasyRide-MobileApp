@@ -29,6 +29,7 @@ class _RiderNotificationSettingsState extends State<RiderNotificationSettings> {
     final interBaseStyle = GoogleFonts.inter();
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -56,6 +57,7 @@ class _RiderNotificationSettingsState extends State<RiderNotificationSettings> {
                     style: syneBaseStyle.copyWith(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -122,13 +124,15 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Text(
       text,
       style: style.copyWith(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 1,
-        color: Colors.grey,
+        color: colorScheme.onSurface.withValues(alpha: 0.5),
       ),
     );
   }
@@ -151,12 +155,15 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final interBaseStyle = GoogleFonts.inter();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -165,10 +172,12 @@ class _NotificationTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark
+                  ? colorScheme.onSurface.withValues(alpha: 0.08)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 20, color: Colors.black87),
+            child: Icon(icon, size: 20, color: colorScheme.onSurface),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -180,6 +189,7 @@ class _NotificationTile extends StatelessWidget {
                   style: interBaseStyle.copyWith(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -187,7 +197,7 @@ class _NotificationTile extends StatelessWidget {
                   subtitle,
                   style: interBaseStyle.copyWith(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -199,7 +209,7 @@ class _NotificationTile extends StatelessWidget {
             activeColor: Colors.white,
             activeTrackColor: const Color(0xFF2ED47A),
             inactiveThumbColor: Colors.white,
-            inactiveTrackColor: Colors.grey.shade300,
+            inactiveTrackColor: colorScheme.onSurface.withValues(alpha: 0.2),
             trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
           ),
         ],

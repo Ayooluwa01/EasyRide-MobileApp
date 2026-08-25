@@ -32,10 +32,12 @@ class _RiderPersonalInformationScreenState
 
   Future<void> _pickDateOfBirth() async {
     DateTime tempPicked = _dateOfBirth ?? DateTime(2000, 1, 1);
+    final colorScheme = Theme.of(context).colorScheme;
+    final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.5);
 
     final picked = await showModalBottomSheet<DateTime>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -61,18 +63,10 @@ class _RiderPersonalInformationScreenState
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
-                          color: Colors.grey.shade500,
+                          color: mutedTextColor,
                         ),
                       ),
                     ),
-                    // const Text(
-                    //   "Date of Birth",
-                    //   style: TextStyle(
-                    //     fontSize: 14,
-                    //     fontWeight: FontWeight.w800,
-                    //     color: Colors.black87,
-                    //   ),
-                    // ),
                     TextButton(
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(tempPicked),
@@ -82,14 +76,18 @@ class _RiderPersonalInformationScreenState
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.6,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: colorScheme.primary,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, thickness: 0.5),
+              Divider(
+                height: 1,
+                thickness: 0.5,
+                color: colorScheme.onSurface.withValues(alpha: 0.08),
+              ),
               // Wheel picker
               SizedBox(
                 height: 220,
@@ -123,6 +121,8 @@ class _RiderPersonalInformationScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final syneBaseStyle = GoogleFonts.syne(
       fontSize: 30,
       height: 1.2,
@@ -131,8 +131,12 @@ class _RiderPersonalInformationScreenState
 
     final InterBaseStyle = GoogleFonts.inter();
 
+    final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.5);
+    final disabledTextColor = colorScheme.onSurface.withValues(alpha: 0.4);
+    final placeholderIconColor = colorScheme.onSurface.withValues(alpha: 0.3);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -141,7 +145,6 @@ class _RiderPersonalInformationScreenState
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  // at the start
                   IconButton(
                     onPressed: () {
                       if (context.canPop()) {
@@ -158,7 +161,6 @@ class _RiderPersonalInformationScreenState
                   ),
 
                   SizedBox(width: 10),
-                  // at the center
                   Center(
                     child: Text(
                       "Personal Info",
@@ -166,11 +168,11 @@ class _RiderPersonalInformationScreenState
                       style: syneBaseStyle.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
 
-                  // at the end
                   Expanded(
                     child: InkWell(
                       onTap: () {
@@ -184,7 +186,7 @@ class _RiderPersonalInformationScreenState
                         style: syneBaseStyle.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.primary,
+                          color: colorScheme.primary,
                         ),
                       ),
                     ),
@@ -230,7 +232,7 @@ class _RiderPersonalInformationScreenState
                               shape: BoxShape.rectangle,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 width: 1.5,
                               ),
                             ),
@@ -255,7 +257,7 @@ class _RiderPersonalInformationScreenState
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,
-                        color: Colors.grey.shade500,
+                        color: mutedTextColor,
                       ),
                     ),
                   ],
@@ -288,7 +290,7 @@ class _RiderPersonalInformationScreenState
                   trailing: Icon(
                     Icons.lock_outline_rounded,
                     size: 16,
-                    color: Colors.grey.shade400,
+                    color: placeholderIconColor,
                   ),
                 ),
               ),
@@ -302,7 +304,7 @@ class _RiderPersonalInformationScreenState
                   trailing: Icon(
                     Icons.calendar_today_outlined,
                     size: 16,
-                    color: Colors.grey.shade400,
+                    color: placeholderIconColor,
                   ),
                 ),
               ),
@@ -325,7 +327,6 @@ class _RiderPersonalInformationScreenState
   }
 }
 
-// Uppercase field label + child widget
 class _FormField extends StatelessWidget {
   final String label;
   final Widget child;
@@ -334,6 +335,8 @@ class _FormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -341,10 +344,10 @@ class _FormField extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF9E9E9E),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
               letterSpacing: 1.2,
             ),
           ),
@@ -355,13 +358,15 @@ class _FormField extends StatelessWidget {
   }
 }
 
-BoxDecoration _fieldDecoration() {
+BoxDecoration _fieldDecoration(ColorScheme colorScheme, bool isDark) {
   return BoxDecoration(
-    color: Colors.white,
+    color: colorScheme.surface,
     borderRadius: BorderRadius.circular(14),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.02),
+        color: isDark
+            ? Colors.transparent
+            : Colors.black.withValues(alpha: 0.02),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
@@ -384,8 +389,12 @@ class _RoundedTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      decoration: _fieldDecoration(),
+      decoration: _fieldDecoration(colorScheme, isDark),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -397,7 +406,9 @@ class _RoundedTextField extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: enabled ? Colors.black87 : Colors.grey.shade500,
+                color: enabled
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurface.withValues(alpha: 0.4),
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
@@ -426,23 +437,27 @@ class _RoundedTapField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          decoration: _fieldDecoration(),
+          decoration: _fieldDecoration(colorScheme, isDark),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -455,7 +470,6 @@ class _RoundedTapField extends StatelessWidget {
   }
 }
 
-// Rounded dropdown field (e.g. gender)
 class _RoundedDropdownField extends StatelessWidget {
   final String? value;
   final List<String> options;
@@ -469,21 +483,26 @@ class _RoundedDropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      decoration: _fieldDecoration(),
+      decoration: _fieldDecoration(colorScheme, isDark),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
+          dropdownColor: colorScheme.surface,
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: Colors.grey.shade400,
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: colorScheme.onSurface,
           ),
           items: options
               .map(

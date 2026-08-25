@@ -34,9 +34,11 @@ mixin ProfileImagePicker<T extends StatefulWidget> on State<T> {
   }
 
   Future<ImageSource?> _showSourceSheet(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

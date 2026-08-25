@@ -309,7 +309,7 @@ class RiderHomeScreen extends ConsumerStatefulWidget {
 class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   MapboxMap? _mapboxController;
   bool _isFollowingUser = true;
-
+  bool? _currentMapStyleIsDark;
   static const double _lagosLat = 6.5244;
   static const double _lagosLng = 3.3792;
 
@@ -337,7 +337,6 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     );
   }
 
-  // Handle live search input with debouncing
   void _onSearchQueryChanged(
     String query,
     StateSetter setModalState, {
@@ -367,6 +366,25 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
         });
       }
     });
+  }
+
+  Future<void> _applyMapStyle(bool isDark, ColorScheme colorScheme) async {
+    final controller = _mapboxController;
+    if (controller == null) return;
+
+    await controller.style.setStyleURI(
+      isDark ? MapboxStyles.DARK : MapboxStyles.MAPBOX_STREETS,
+    );
+
+    await controller.location.updateSettings(
+      LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+        pulsingColor: colorScheme.primary.toARGB32(),
+      ),
+    );
+
+    _currentMapStyleIsDark = isDark;
   }
 
   Future<List<Map<String, dynamic>>> _fetchMapboxGeocodingResults(
@@ -440,7 +458,6 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     _searchRequestId++;
     var isSheetOpen = true;
 
-    // Cache font styles outside the builder
     final titleStyle = GoogleFonts.syne(
       fontSize: 28,
       fontWeight: FontWeight.bold,
@@ -452,167 +469,184 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
       enableDrag: true,
       useSafeArea: true,
       requestFocus: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: 0.65,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF161616) : Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Drag Handle
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.3,
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final maxSheetHeight = MediaQuery.of(context).size.height * 0.65;
+
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 100),
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxSheetHeight),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF161616) : Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(32),
                         ),
                       ),
-
-                      // Title Header
-                      Text('Where to\ntoday?', style: titleStyle),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Lagos is moving fast. We\'re ready.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? Colors.white54 : Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Destination Input Field
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF242424)
-                              : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Drag Handle
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 20),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary,
-                                shape: BoxShape.circle,
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.3,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                // Disabled autofocus to let bottom sheet slide smoothly first
-                                autofocus: false,
-                                onChanged: (val) => _onSearchQueryChanged(
-                                  val,
-                                  setModalState,
-                                  isSheetOpen: () => isSheetOpen,
-                                ),
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Where are you going?',
-                                  hintStyle: TextStyle(
-                                    fontSize: 15,
-                                    color: isDark
-                                        ? Colors.white38
-                                        : Colors.black38,
-                                  ),
-                                  border: InputBorder.none,
-                                ),
-                              ),
-                            ),
-                            if (_isSearching)
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.primary,
-                                ),
-                              )
-                            else if (_searchController.text.isNotEmpty)
-                              GestureDetector(
-                                onTap: () {
-                                  _searchController.clear();
-                                  _onSearchQueryChanged(
-                                    '',
-                                    setModalState,
-                                    isSheetOpen: () => isSheetOpen,
-                                  );
-                                },
-                                child: Icon(
-                                  Icons.cancel,
-                                  color: isDark
-                                      ? Colors.white38
-                                      : Colors.black38,
-                                  size: 18,
-                                ),
-                              )
-                            else
-                              Icon(Icons.search, color: colorScheme.primary),
-                          ],
-                        ),
-                      ),
+                          ),
 
-                      // Quick Chips or Results List
-                      Expanded(
-                        child: _searchResults.isEmpty && !_isSearching
-                            ? SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    _buildQuickLocationChip(
-                                      icon: Icons.home_rounded,
-                                      label: 'Home',
-                                      isDark: isDark,
-                                      colorScheme: colorScheme,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    _buildQuickLocationChip(
-                                      icon: Icons.work_rounded,
-                                      label: 'Work',
-                                      isDark: isDark,
-                                      colorScheme: colorScheme,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    _buildQuickLocationChip(
-                                      icon: Icons.star_rounded,
-                                      label: 'Favorites',
-                                      isDark: isDark,
-                                      colorScheme: colorScheme,
-                                    ),
-                                  ],
+                          // Title Header
+                          Text('Where to\ntoday?', style: titleStyle),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Lagos is moving fast. We\'re ready.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? Colors.white54 : Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Destination Input Field
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF242424)
+                                  : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              )
-                            : ListView.separated(
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    autofocus: false,
+                                    onChanged: (val) => _onSearchQueryChanged(
+                                      val,
+                                      setModalState,
+                                      isSheetOpen: () => isSheetOpen,
+                                    ),
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Where are you going?',
+                                      hintStyle: TextStyle(
+                                        fontSize: 15,
+                                        color: isDark
+                                            ? Colors.white38
+                                            : Colors.black38,
+                                      ),
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
+                                ),
+                                if (_isSearching)
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.primary,
+                                    ),
+                                  )
+                                else if (_searchController.text.isNotEmpty)
+                                  GestureDetector(
+                                    onTap: () {
+                                      _searchController.clear();
+                                      _onSearchQueryChanged(
+                                        '',
+                                        setModalState,
+                                        isSheetOpen: () => isSheetOpen,
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.cancel,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.black38,
+                                      size: 18,
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    Icons.search,
+                                    color: colorScheme.primary,
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          if (_searchResults.isEmpty && !_isSearching)
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _buildQuickLocationChip(
+                                    icon: Icons.home_rounded,
+                                    label: 'Home',
+                                    isDark: isDark,
+                                    colorScheme: colorScheme,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _buildQuickLocationChip(
+                                    icon: Icons.work_rounded,
+                                    label: 'Work',
+                                    isDark: isDark,
+                                    colorScheme: colorScheme,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _buildQuickLocationChip(
+                                    icon: Icons.star_rounded,
+                                    label: 'Favorites',
+                                    isDark: isDark,
+                                    colorScheme: colorScheme,
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Flexible(
+                              child: ListView.separated(
+                                shrinkWrap: true,
                                 padding: EdgeInsets.zero,
                                 itemCount: _searchResults.length,
                                 separatorBuilder: (context, index) => Divider(
@@ -664,8 +698,10 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                                   );
                                 },
                               ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -720,6 +756,12 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     final locationState = ref.watch(locationProvider);
     final userLatLng = ref.watch(userLatLngProvider);
 
+    if (_mapboxController != null && _currentMapStyleIsDark != isDark) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applyMapStyle(isDark, colorScheme);
+      });
+    }
+
     ref.listen(locationProvider, (previous, next) {
       next.whenData((position) {
         if (_isFollowingUser && _mapboxController != null) {
@@ -741,7 +783,7 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
             ),
             onMapCreated: (controller) async {
               _mapboxController = controller;
-
+              _currentMapStyleIsDark = isDark;
               await controller.location.updateSettings(
                 LocationComponentSettings(
                   enabled: true,

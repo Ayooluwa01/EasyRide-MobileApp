@@ -16,6 +16,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     final syneBaseStyle = GoogleFonts.syne(
       fontSize: 30,
@@ -24,7 +25,12 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
     );
     final interBaseStyle = GoogleFonts.inter();
 
+    final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.6);
+    final tileBackground = colorScheme.surface;
+    final sectionLabelColor = colorScheme.onSurface.withValues(alpha: 0.5);
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -52,6 +58,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                     style: syneBaseStyle.copyWith(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -59,7 +66,6 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
 
               const SizedBox(height: 24),
 
-              // Wallet balance card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -137,7 +143,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
-                  color: Colors.grey,
+                  color: sectionLabelColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -172,13 +178,16 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300, width: 1.2),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withValues(alpha: 0.15),
+                      width: 1.2,
+                    ),
                   ),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add, size: 18, color: Colors.grey.shade600),
+                        Icon(Icons.add, size: 18, color: mutedTextColor),
                         const SizedBox(width: 8),
                         Text(
                           "ADD NEW METHOD",
@@ -186,7 +195,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
-                            color: Colors.grey.shade600,
+                            color: mutedTextColor,
                           ),
                         ),
                       ],
@@ -204,7 +213,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
-                  color: Colors.grey,
+                  color: sectionLabelColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -218,7 +227,7 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: tileBackground,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -227,13 +236,15 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark
+                              ? colorScheme.onSurface.withValues(alpha: 0.08)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.receipt_long_outlined,
                           size: 20,
-                          color: Colors.black87,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -243,12 +254,13 @@ class _RiderPaymentMethodState extends State<RiderPaymentMethod> {
                           style: interBaseStyle.copyWith(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ),
                       Icon(
                         Icons.chevron_right,
-                        color: Colors.grey.shade400,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 22,
                       ),
                     ],
@@ -286,6 +298,7 @@ class _PaymentMethodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final interBaseStyle = GoogleFonts.inter();
 
     return InkWell(
@@ -294,7 +307,7 @@ class _PaymentMethodTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -318,6 +331,7 @@ class _PaymentMethodTile extends StatelessWidget {
                     style: interBaseStyle.copyWith(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -325,7 +339,7 @@ class _PaymentMethodTile extends StatelessWidget {
                     expiry,
                     style: interBaseStyle.copyWith(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],

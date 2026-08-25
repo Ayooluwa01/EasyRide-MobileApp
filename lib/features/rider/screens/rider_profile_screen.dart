@@ -1,24 +1,41 @@
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/option_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class RiderProfileScreen extends StatelessWidget {
+class RiderProfileScreen extends ConsumerStatefulWidget {
   const RiderProfileScreen({super.key});
+
+  @override
+  ConsumerState<RiderProfileScreen> createState() => _RiderProfileScreenState();
+}
+
+class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
+  bool _biometricsEnabled = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final syneBaseStyle = GoogleFonts.syne(
       fontSize: 30,
       height: 1.2,
       fontWeight: FontWeight.w700,
     );
 
+    final themeMode = ref.watch(themeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
+
+    final dividerColor = colorScheme.onSurface.withValues(alpha: 0.08);
+    final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.6);
+    final chevronColor = colorScheme.onSurface.withValues(alpha: 0.4);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         top: true,
         child: SingleChildScrollView(
@@ -27,32 +44,7 @@ class RiderProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top Bar
-              Row(
-                children: [
-                  // IconButton(
-                  //   onPressed: () {},
-                  //   padding: EdgeInsets.zero,
-                  //   constraints: const BoxConstraints(),
-                  //   icon: Icon(
-                  //     Icons.arrow_back_ios_new_rounded,
-                  //     color: colorScheme.onSurface,
-                  //     size: 18,
-                  //   ),
-                  // ),
-                  // Expanded(
-                  //   child: Text(
-                  //     "Settings",
-                  //     textAlign: TextAlign.center,
-                  //     style: syneBaseStyle.copyWith(
-                  //       fontSize: 22,
-                  //       fontWeight: FontWeight.w800,
-                  //     ),
-                  //   ),
-                  // ),
-                  // Balances the leading back button so the title stays centered
-                  const SizedBox(width: 30),
-                ],
-              ),
+              Row(children: [const SizedBox(width: 30)]),
               const SizedBox(height: 34),
 
               // Profile Header Section
@@ -88,7 +80,7 @@ class RiderProfileScreen extends StatelessWidget {
                               shape: BoxShape.rectangle,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 width: 1.5,
                               ),
                             ),
@@ -110,15 +102,13 @@ class RiderProfileScreen extends StatelessWidget {
                           style: syneBaseStyle.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'amaka.obi@email.com',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
+                          style: TextStyle(fontSize: 13, color: mutedTextColor),
                         ),
                         const SizedBox(height: 6),
                         Container(
@@ -145,7 +135,6 @@ class RiderProfileScreen extends StatelessWidget {
                                   '4.98 RIDER',
                                   style: TextStyle(
                                     fontSize: 10,
-
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF4CAF50),
                                     letterSpacing: 0.5,
@@ -164,8 +153,10 @@ class RiderProfileScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               // ACCOUNT SECTION
-              const _SectionHeader(title: "ACCOUNT"),
+              _SectionHeader(title: "ACCOUNT", color: mutedTextColor),
               _SettingsGroupCard(
+                colorScheme: colorScheme,
+                isDark: isDark,
                 children: [
                   OptionTile(
                     icon: Icons.person_outline_rounded,
@@ -174,11 +165,11 @@ class RiderProfileScreen extends StatelessWidget {
                       context.push(RouteNames.riderpersonalprofile);
                     },
                   ),
-                  const Divider(
+                  Divider(
                     height: 1,
                     thickness: 0.5,
                     indent: 48,
-                    color: Color.fromARGB(26, 204, 201, 201),
+                    color: dividerColor,
                   ),
                   OptionTile(
                     icon: Icons.account_balance_wallet_outlined,
@@ -192,8 +183,10 @@ class RiderProfileScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // PREFERENCES SECTION
-              const _SectionHeader(title: "PREFERENCES"),
+              _SectionHeader(title: "PREFERENCES", color: mutedTextColor),
               _SettingsGroupCard(
+                colorScheme: colorScheme,
+                isDark: isDark,
                 children: [
                   OptionTile(
                     icon: Icons.notifications_none_rounded,
@@ -202,35 +195,89 @@ class RiderProfileScreen extends StatelessWidget {
                       context.push(RouteNames.ridernotification);
                     },
                   ),
-                  const Divider(
+                  Divider(
                     height: 1,
                     thickness: 0.5,
                     indent: 48,
-                    color: Color.fromARGB(26, 204, 201, 201),
+                    color: dividerColor,
                   ),
                   OptionTile(
                     icon: Icons.shield_outlined,
                     label: "Privacy & Security",
-                    onTap: () {},
+                    onTap: () {
+                      context.push(RouteNames.ridersecurity);
+                    },
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 48,
+                    color: dividerColor,
+                  ),
+                  OptionTile(
+                    icon: Icons.dark_mode_outlined,
+                    label: "Dark Mode",
+                    trailing: Switch(
+                      value: isDarkMode,
+                      onChanged: (_) {
+                        ref.read(themeProvider.notifier).toggleTheme();
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: const Color(0xFF2ED47A),
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: colorScheme.onSurface.withValues(
+                        alpha: 0.2,
+                      ),
+                      trackOutlineColor: WidgetStateProperty.all(
+                        Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 48,
+                    color: dividerColor,
+                  ),
+                  OptionTile(
+                    icon: Icons.fingerprint_rounded,
+                    label: "Biometric Login",
+                    trailing: Switch(
+                      value: _biometricsEnabled,
+                      onChanged: (v) {
+                        setState(() => _biometricsEnabled = v);
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: const Color(0xFF2ED47A),
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: colorScheme.onSurface.withValues(
+                        alpha: 0.2,
+                      ),
+                      trackOutlineColor: WidgetStateProperty.all(
+                        Colors.transparent,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
 
               // SUPPORT SECTION
-              const _SectionHeader(title: "SUPPORT"),
+              _SectionHeader(title: "SUPPORT", color: mutedTextColor),
               _SettingsGroupCard(
+                colorScheme: colorScheme,
+                isDark: isDark,
                 children: [
                   OptionTile(
                     icon: Icons.help_outline_rounded,
                     label: "Help Center",
                     onTap: () {},
                   ),
-                  const Divider(
+                  Divider(
                     height: 1,
                     thickness: 0.5,
                     indent: 48,
-                    color: Color.fromARGB(26, 204, 201, 201),
+                    color: dividerColor,
                   ),
                   OptionTile(
                     icon: Icons.info_outline_rounded,
@@ -242,7 +289,11 @@ class RiderProfileScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // SIGN OUT
-              _SignOutButton(onTap: () {}),
+              _SignOutButton(
+                colorScheme: colorScheme,
+                isDark: isDark,
+                onTap: () {},
+              ),
               const SizedBox(height: 24),
             ],
           ),
@@ -255,8 +306,9 @@ class RiderProfileScreen extends StatelessWidget {
 // Section Header
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final Color color;
 
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -264,10 +316,10 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF9E9E9E),
+          color: color,
           letterSpacing: 1.2,
         ),
       ),
@@ -277,8 +329,14 @@ class _SectionHeader extends StatelessWidget {
 
 class _SettingsGroupCard extends StatelessWidget {
   final List<Widget> children;
+  final ColorScheme colorScheme;
+  final bool isDark;
 
-  const _SettingsGroupCard({required this.children});
+  const _SettingsGroupCard({
+    required this.children,
+    required this.colorScheme,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -286,11 +344,15 @@ class _SettingsGroupCard extends StatelessWidget {
       padding: const EdgeInsets.all(1.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              // Shadows read as noise on dark surfaces, so only cast
+              // one in light mode.
+              color: isDark
+                  ? Colors.transparent
+                  : Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -302,20 +364,24 @@ class _SettingsGroupCard extends StatelessWidget {
   }
 }
 
-// Reusable Tile Widget
-
-// Sign Out Button (rounded white card, red label + icon)
+// Sign Out Button (rounded card, red label + icon)
 class _SignOutButton extends StatelessWidget {
   final VoidCallback? onTap;
+  final ColorScheme colorScheme;
+  final bool isDark;
 
-  const _SignOutButton({this.onTap});
+  const _SignOutButton({
+    this.onTap,
+    required this.colorScheme,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: Material(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -326,15 +392,17 @@ class _SignOutButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: isDark
+                      ? Colors.transparent
+                      : Colors.black.withValues(alpha: 0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Icon(Icons.logout_rounded, size: 16, color: Color(0xFFE53935)),
                 SizedBox(width: 8),
                 Text(

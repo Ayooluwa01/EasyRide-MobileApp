@@ -7,6 +7,7 @@ import 'package:easy_ride/features/rider/screens/personal_information_screen.dar
 import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_notification_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_profile_screen.dart';
+import 'package:easy_ride/features/rider/screens/rider_security_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -87,6 +88,14 @@ final appRouter = GoRouter(
       name: 'ridernotification',
       builder: (context, state) {
         return const RiderNotificationSettings();
+      },
+    ),
+
+    GoRoute(
+      path: RouteNames.ridersecurity,
+      name: 'ridersecurity',
+      builder: (context, state) {
+        return const RiderSecuritySettings();
       },
     ),
   ],
