@@ -51,7 +51,7 @@ plugins {
 android {
     namespace = "com.aytech.easyride"
     
-    compileSdk =37
+    compileSdk =36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

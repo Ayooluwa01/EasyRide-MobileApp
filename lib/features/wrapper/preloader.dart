@@ -1,5 +1,5 @@
 import 'package:easy_ride/app/models/toast_notification_model.dart';
-import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,7 +42,6 @@ class Preloader extends ConsumerWidget {
   void _showThemedToast(BuildContext context, ToastData data) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final colorScheme = theme.colorScheme;
 
     final Color surface = isDark
         ? AppColors.darkSurface

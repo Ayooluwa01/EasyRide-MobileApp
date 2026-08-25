@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:easy_ride/app/router/route_names.dart';
-import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
-import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/core/widgets/back_button.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
@@ -151,8 +150,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
             .showSuccess("Otp resent successfully");
       }
     });
-    final locationState = ref.watch(locationProvider);
-    final userLatLng = ref.watch(userLatLngProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;

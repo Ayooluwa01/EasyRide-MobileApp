@@ -1,17 +1,14 @@
 import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:easy_ride/app/services/auth_service.dart';
-import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
 import 'package:easy_ride/features/auth/models/auth/signup_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthController extends AsyncNotifier<LoginOtpResponse?> {
-  static const String _accessTokenKey = 'access-token';
-  static const String _refreshTokenKey = 'refresh-token';
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
   AppActivityNotifier get _preloader => ref.read(appActivityProvider.notifier);
 
   @override
@@ -47,16 +44,6 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
       state = await AsyncValue.guard(() async {
         final authService = ref.read(authServiceProvider);
         response = await authService.verifyLoginOtp(request);
-
-        // Uncomment when ready to store tokens:
-        // await _secureStorage.write(
-        //   key: _accessTokenKey,
-        //   value: response.data.accessToken,
-        // );
-        // await _secureStorage.write(
-        //   key: _refreshTokenKey,
-        //   value: response.data.refreshToken,
-        // );
 
         return response;
       });
@@ -99,16 +86,6 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
         final authService = ref.read(authServiceProvider);
         response = await authService.verifySignupOtp(request);
 
-        // Uncomment when ready to store tokens:
-        // await _secureStorage.write(
-        //   key: _accessTokenKey,
-        //   value: response.data.accessToken,
-        // );
-        // await _secureStorage.write(
-        //   key: _refreshTokenKey,
-        //   value: response.data.refreshToken,
-        // );
-
         return LoginOtpResponse(
           success: response.success,
           message: response.message,
@@ -139,7 +116,7 @@ class AuthController extends AsyncNotifier<LoginOtpResponse?> {
     try {
       final authService = ref.read(authServiceProvider);
       response = await authService.resendOtp(request);
-      print(" otp-response:${response}");
+      developer.log('otp-response: $response', name: 'AuthController');
       return response;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

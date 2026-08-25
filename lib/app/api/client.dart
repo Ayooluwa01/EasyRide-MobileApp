@@ -1,7 +1,9 @@
+import 'dart:developer' as developer;
+
 import 'package:dio/dio.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/api/error_exception.dart';
-import 'package:easy_ride/app/shared/app-activity-provider.dart';
+import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -53,9 +55,12 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest:
             (RequestOptions options, RequestInterceptorHandler handler) async {
-              print('➡️ ${options.method} ${options.baseUrl}${options.path}');
-              print('➡️ Headers: ${options.headers}');
-              print('➡️ Body: ${options.data}');
+              developer.log(
+                '${options.method} ${options.baseUrl}${options.path}',
+                name: 'ApiClient',
+              );
+              developer.log('Headers: ${options.headers}', name: 'ApiClient');
+              developer.log('Body: ${options.data}', name: 'ApiClient');
               try {
                 final token = await secureStorage.read(key: _accessTokenKey);
                 final isAuthRequest = AuthRoutes.isAuthRoute(options.path);

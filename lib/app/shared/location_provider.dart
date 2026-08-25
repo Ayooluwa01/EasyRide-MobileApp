@@ -27,6 +27,6 @@ final userLatLngProvider = Provider<LatLng?>((ref) {
   return asyncPosition.when(
     data: (pos) => LatLng(pos.latitude, pos.longitude),
     loading: () => null,
-    error: (_, __) => null,
+    error: (_, _) => null,
   );
 });

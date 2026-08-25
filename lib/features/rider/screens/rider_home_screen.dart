@@ -289,9 +289,14 @@
 //   }
 // }
 
+import 'dart:async';
+import 'dart:convert';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class RiderHomeScreen extends ConsumerStatefulWidget {
@@ -308,6 +313,20 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   static const double _lagosLat = 6.5244;
   static const double _lagosLng = 3.3792;
 
+  // Search State
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+  int _searchRequestId = 0;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
   void _flyToLocation(double lat, double lng, {double zoom = 16.0}) {
     _mapboxController?.easeTo(
       CameraOptions(
@@ -315,6 +334,380 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
         zoom: zoom,
       ),
       MapAnimationOptions(duration: 800),
+    );
+  }
+
+  // Handle live search input with debouncing
+  void _onSearchQueryChanged(
+    String query,
+    StateSetter setModalState, {
+    required bool Function() isSheetOpen,
+  }) {
+    _debounceTimer?.cancel();
+
+    final trimmedQuery = query.trim();
+    final requestId = ++_searchRequestId;
+
+    if (trimmedQuery.isEmpty) {
+      setModalState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setModalState(() => _isSearching = true);
+
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () async {
+      final results = await _fetchMapboxGeocodingResults(trimmedQuery);
+      if (mounted && isSheetOpen() && requestId == _searchRequestId) {
+        setModalState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchMapboxGeocodingResults(
+    String query,
+  ) async {
+    final token = dotenv.env['MAP_BOX_TOKEN'];
+    if (token == null || token.isEmpty) return [];
+
+    final userLatLng = ref.read(userLatLngProvider);
+    final proximityLng = userLatLng?.longitude ?? _lagosLng;
+    final proximityLat = userLatLng?.latitude ?? _lagosLat;
+
+    final encodedQuery = Uri.encodeComponent(query);
+    final url = Uri.parse(
+      'https://api.mapbox.com/geocoding/v5/mapbox.places/$encodedQuery.json'
+      '?access_token=$token'
+      '&proximity=$proximityLng,$proximityLat'
+      '&country=NG'
+      '&limit=5',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List features = data['features'] ?? [];
+        return features.map((feature) {
+          final List center = feature['center'] ?? [0.0, 0.0];
+          return {
+            'title': feature['text'] ?? '',
+            'subtitle': feature['place_name'] ?? '',
+            'lng': (center[0] as num).toDouble(),
+            'lat': (center[1] as num).toDouble(),
+          };
+        }).toList();
+      }
+    } catch (e) {
+      // Search suggestions are best-effort; keep the ride sheet responsive.
+    }
+
+    return [];
+  }
+
+  void _selectDestination(Map<String, dynamic> location) {
+    Navigator.pop(context);
+    _isFollowingUser = false;
+    _flyToLocation(
+      location['lat'] as double,
+      location['lng'] as double,
+      zoom: 15.5,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Selected: ${location['title']}'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showWhereToBottomSheet(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    _searchController.clear();
+    _searchResults.clear();
+    _isSearching = false;
+    _debounceTimer?.cancel();
+    _searchRequestId++;
+    var isSheetOpen = true;
+
+    // Cache font styles outside the builder
+    final titleStyle = GoogleFonts.syne(
+      fontSize: 28,
+      fontWeight: FontWeight.bold,
+      height: 1.1,
+      color: isDark ? Colors.white : Colors.black,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
+      useSafeArea: true,
+      requestFocus: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: FractionallySizedBox(
+                heightFactor: 0.65,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF161616) : Colors.white,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Drag Handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.3,
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+
+                      // Title Header
+                      Text('Where to\ntoday?', style: titleStyle),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Lagos is moving fast. We\'re ready.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Destination Input Field
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF242424)
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                // Disabled autofocus to let bottom sheet slide smoothly first
+                                autofocus: false,
+                                onChanged: (val) => _onSearchQueryChanged(
+                                  val,
+                                  setModalState,
+                                  isSheetOpen: () => isSheetOpen,
+                                ),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Where are you going?',
+                                  hintStyle: TextStyle(
+                                    fontSize: 15,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            if (_isSearching)
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colorScheme.primary,
+                                ),
+                              )
+                            else if (_searchController.text.isNotEmpty)
+                              GestureDetector(
+                                onTap: () {
+                                  _searchController.clear();
+                                  _onSearchQueryChanged(
+                                    '',
+                                    setModalState,
+                                    isSheetOpen: () => isSheetOpen,
+                                  );
+                                },
+                                child: Icon(
+                                  Icons.cancel,
+                                  color: isDark
+                                      ? Colors.white38
+                                      : Colors.black38,
+                                  size: 18,
+                                ),
+                              )
+                            else
+                              Icon(Icons.search, color: colorScheme.primary),
+                          ],
+                        ),
+                      ),
+
+                      // Quick Chips or Results List
+                      Expanded(
+                        child: _searchResults.isEmpty && !_isSearching
+                            ? SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _buildQuickLocationChip(
+                                      icon: Icons.home_rounded,
+                                      label: 'Home',
+                                      isDark: isDark,
+                                      colorScheme: colorScheme,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    _buildQuickLocationChip(
+                                      icon: Icons.work_rounded,
+                                      label: 'Work',
+                                      isDark: isDark,
+                                      colorScheme: colorScheme,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    _buildQuickLocationChip(
+                                      icon: Icons.star_rounded,
+                                      label: 'Favorites',
+                                      isDark: isDark,
+                                      colorScheme: colorScheme,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: EdgeInsets.zero,
+                                itemCount: _searchResults.length,
+                                separatorBuilder: (context, index) => Divider(
+                                  height: 1,
+                                  color: isDark
+                                      ? Colors.white10
+                                      : Colors.black.withValues(alpha: 0.05),
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = _searchResults[index];
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.location_on_rounded,
+                                        color: colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      item['title'] as String,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      item['subtitle'] as String,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark
+                                            ? Colors.white54
+                                            : Colors.black54,
+                                      ),
+                                    ),
+                                    onTap: () => _selectDestination(item),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      isSheetOpen = false;
+      _debounceTimer?.cancel();
+      _searchRequestId++;
+      _isSearching = false;
+    });
+  }
+
+  Widget _buildQuickLocationChip({
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    required ColorScheme colorScheme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF242424) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isDark ? Colors.white70 : Colors.black),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -338,10 +731,11 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // MAPBOX LAYER
           MapWidget(
             key: const ValueKey("mapbox_native_map"),
             styleUri: isDark ? MapboxStyles.DARK : MapboxStyles.MAPBOX_STREETS,
-            cameraOptions: CameraOptions(
+            viewport: CameraViewportState(
               center: Point(coordinates: Position(_lagosLng, _lagosLat)),
               zoom: 14.0,
             ),
@@ -352,7 +746,7 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                 LocationComponentSettings(
                   enabled: true,
                   pulsingEnabled: true,
-                  pulsingColor: colorScheme.primary.value,
+                  pulsingColor: colorScheme.primary.toARGB32(),
                 ),
               );
 
@@ -367,19 +761,20 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
             },
           ),
 
+          // TOP CARDS
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Profile
+                  // Profile Card
                   Card(
                     elevation: 2,
                     shadowColor: Colors.black12,
                     color: isDark
-                        ? const Color(0xFF1E1E1E).withOpacity(0.9)
-                        : Colors.white.withOpacity(0.95),
+                        ? const Color(0xFF1E1E1E).withValues(alpha: 0.9)
+                        : Colors.white.withValues(alpha: 0.95),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -424,7 +819,9 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.12),
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -440,7 +837,6 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Quick Action Card
                   Card(
                     elevation: 4,
                     shadowColor: Colors.black26,
@@ -449,9 +845,8 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: InkWell(
-                      onTap: () {
-                        // Action for ride request flow
-                      },
+                      onTap: () =>
+                          _showWhereToBottomSheet(context, colorScheme, isDark),
                       borderRadius: BorderRadius.circular(24),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -485,9 +880,9 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     'Request a Ride',
-                                    style: TextStyle(
+                                    style: GoogleFonts.syne(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
@@ -504,13 +899,13 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Icon(
                                   Icons.chevron_right_rounded,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   size: 20,
                                 ),
                               ],
@@ -526,11 +921,11 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
             ),
           ),
 
-          // 3. INITIAL PRELOADER
+          // PRELOADER
           if (locationState.isLoading)
             Positioned.fill(
               child: Container(
-                color: colorScheme.surface.withOpacity(0.85),
+                color: colorScheme.surface.withValues(alpha: 0.85),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -572,7 +967,7 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
               ),
             ),
 
-          // 4. RECENTER FAB
+          // RECENTER FAB
           Positioned(
             bottom: 30,
             right: 16,
