@@ -20,7 +20,7 @@ class _BottomNavState extends State<BottomNav> {
 
   final List<Widget> _screens = const [
     RiderHomeScreen(),
-    RiderChatScreen(),
+    RiderChatListScreen(),
     RiderTripScreen(),
     RiderProfileScreen(),
   ];

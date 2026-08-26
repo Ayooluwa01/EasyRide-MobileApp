@@ -2,11 +2,12 @@ import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
+import 'package:easy_ride/features/rider/screens/chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/payment_method.dart';
 import 'package:easy_ride/features/rider/screens/personal_information_screen.dart';
+import 'package:easy_ride/features/rider/screens/rider_chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_notification_screen.dart';
-import 'package:easy_ride/features/rider/screens/rider_profile_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_security_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -96,6 +97,15 @@ final appRouter = GoRouter(
       name: 'ridersecurity',
       builder: (context, state) {
         return const RiderSecuritySettings();
+      },
+    ),
+    GoRoute(
+      path: '/rider/chats/:chatId',
+      builder: (context, state) {
+        final chatId = state.pathParameters['chatId']!;
+        final chatObject = state.extra as ChatPreview;
+
+        return ChatScreen(chatId: chatId, chat: chatObject);
       },
     ),
   ],

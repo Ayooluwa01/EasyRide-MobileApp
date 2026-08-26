@@ -206,7 +206,7 @@ class _NotificationTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: const Color(0xFF2ED47A),
             inactiveThumbColor: Colors.white,
             inactiveTrackColor: colorScheme.onSurface.withValues(alpha: 0.2),
