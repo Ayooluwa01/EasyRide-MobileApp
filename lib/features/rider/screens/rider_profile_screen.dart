@@ -2,7 +2,6 @@ import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/option_tile.dart';
 import 'package:easy_ride/features/auth/controllers/login_controller.dart';
-import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,7 +34,6 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
     final user = loginState.value?.data.user;
     final dividerColor = colorScheme.onSurface.withValues(alpha: 0.08);
     final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.6);
-    final chevronColor = colorScheme.onSurface.withValues(alpha: 0.4);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

@@ -1,5 +1,4 @@
 import 'package:easy_ride/app/router/route_names.dart';
-import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';

@@ -9,7 +9,6 @@ import 'package:easy_ride/features/auth/controllers/login_controller.dart';
 import 'package:easy_ride/features/auth/controllers/otp_controller.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
-import 'package:easy_ride/features/auth/state/auth.state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

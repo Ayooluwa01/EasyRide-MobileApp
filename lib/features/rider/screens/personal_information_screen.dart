@@ -121,7 +121,6 @@ class _RiderPersonalInformationScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     final syneBaseStyle = GoogleFonts.syne(
       fontSize: 30,
@@ -129,10 +128,9 @@ class _RiderPersonalInformationScreenState
       fontWeight: FontWeight.w700,
     );
 
-    final InterBaseStyle = GoogleFonts.inter();
+    final interBaseStyle = GoogleFonts.inter();
 
     final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.5);
-    final disabledTextColor = colorScheme.onSurface.withValues(alpha: 0.4);
     final placeholderIconColor = colorScheme.onSurface.withValues(alpha: 0.3);
 
     return Scaffold(
@@ -253,7 +251,7 @@ class _RiderPersonalInformationScreenState
                     const SizedBox(height: 10),
                     Text(
                       'CHANGE PROFILE PHOTO',
-                      style: InterBaseStyle.copyWith(
+                      style: interBaseStyle.copyWith(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.6,

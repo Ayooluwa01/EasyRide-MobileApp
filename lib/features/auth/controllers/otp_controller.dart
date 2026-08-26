@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:easy_ride/app/services/auth_service.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';

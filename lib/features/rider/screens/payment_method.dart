@@ -345,11 +345,13 @@ class _PaymentMethodTile extends StatelessWidget {
                 ],
               ),
             ),
-            Radio<bool>(
-              value: true,
+            RadioGroup<bool>(
               groupValue: isSelected,
               onChanged: (_) => onTap(),
-              activeColor: const Color(0xFF2ED47A),
+              child: Radio<bool>(
+                value: true,
+                activeColor: const Color(0xFF2ED47A),
+              ),
             ),
           ],
         ),
