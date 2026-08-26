@@ -5,6 +5,8 @@ import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/core/widgets/back_button.dart';
+import 'package:easy_ride/features/auth/controllers/login_controller.dart';
+import 'package:easy_ride/features/auth/controllers/otp_controller.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
 import 'package:easy_ride/features/auth/state/auth.state.dart';
@@ -31,7 +33,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   late AnimationController _otpAnimationController;
   late Animation<double> _otpFadeAnimation;
   late Animation<Offset> _otpSlideAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -76,26 +77,39 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     });
   }
 
-  void verifyOtp() async {
-    context.go(RouteNames.rider);
+  Future<void> verifyOtp() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
 
-    // if (formKey.currentState!.validate()) {
-    //   final loginData = ref.read(loginRequestProvider);
-    //   final request = VerifyLoginOtpRequest(
-    //     phone: loginData?.phone ?? '',
-    //     code: _pinController.text.trim(),
-    //   );
+    final loginData = ref.read(loginRequestProvider);
+    if (loginData == null) {
+      ref
+          .read(appToastProvider.notifier)
+          .showError('Login information not found.');
+      return;
+    }
 
-    //   try {
-    //     final success = await ref
-    //         .read(authControllerProvider.notifier)
-    //         .verifyLogin(request);
+    final request = VerifyLoginOtpRequest(
+      phone: loginData.phone,
+      code: _pinController.text.trim(),
+    );
 
-    //     if (success.success && mounted) {
-    //       context.go(RouteNames.riderhomescreen);
-    //     }
-    //   } catch (_) {}
-    // }
+    try {
+      final response = await ref
+          .read(loginControllerProvider.notifier)
+          .verifyLogin(request);
+
+      if (!mounted) return;
+
+      if (response.success) {
+        context.go(RouteNames.riderhomescreen);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ref.read(appToastProvider.notifier).showError(e.toString());
+    }
   }
 
   void handleResendOtp() async {
@@ -110,7 +124,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     try {
       final request = OtpRequestModel(phone: phone);
       final response = await ref
-          .read(authControllerProvider.notifier)
+          .read(otpControllerProvider.notifier)
           .resendOtp(request);
 
       startTimer();
@@ -139,23 +153,31 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<LoginOtpResponse?>>(authControllerProvider, (
-      previous,
-      next,
-    ) {
+    // ref.listen<AsyncValue<LoginOtpResponse?>>(authControllerProvider, (
+    //   previous,
+    //   next,
+    // ) {
+    //   if (next.hasError) {
+    //   } else if (next.hasValue && next.value != null) {
+    //     ref
+    //         .watch(appToastProvider.notifier)
+    //         .showSuccess("Otp resent successfully");
+    //   }
+    // });
+    final authState = ref.watch(loginControllerProvider);
+    ref.listen<AsyncValue>(otpControllerProvider, ((previous, next) {
       if (next.hasError) {
       } else if (next.hasValue && next.value != null) {
         ref
             .watch(appToastProvider.notifier)
             .showSuccess("Otp resent successfully");
       }
-    });
+    }));
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
+    // final authState = ref.read(OtpController);
     final loginData = ref.watch(loginRequestProvider);
-    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,

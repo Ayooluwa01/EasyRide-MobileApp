@@ -1,3 +1,5 @@
+import 'package:easy_ride/features/auth/models/user/user_model.dart';
+
 class SignupRequest {
   final String phone;
   final String role;
@@ -62,13 +64,19 @@ class SignupOtpResponse {
 }
 
 class SignupOtpData {
+  final User user;
   final String accessToken;
   final String refreshToken;
 
-  SignupOtpData({required this.accessToken, required this.refreshToken});
+  SignupOtpData({
+    required this.user,
+    required this.accessToken,
+    required this.refreshToken,
+  });
 
   factory SignupOtpData.fromJson(Map<String, dynamic> json) {
     return SignupOtpData(
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
     );

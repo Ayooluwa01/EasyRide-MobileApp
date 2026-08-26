@@ -126,9 +126,7 @@ class RiderSecuritySettings extends StatelessWidget {
                 icon: Icons.key_outlined,
                 title: "Change Password",
                 subtitle: "Last changed 3 months ago",
-                onTap: () {
-                  // TODO: navigate to change-password flow
-                },
+                onTap: () {},
               ),
               const SizedBox(height: 12),
               _SecurityTile(
@@ -141,9 +139,7 @@ class RiderSecuritySettings extends StatelessWidget {
                   background: secureBannerBg,
                   textColor: secureBannerText,
                 ),
-                onTap: () {
-                  // TODO: navigate to 2FA settings
-                },
+                onTap: () {},
               ),
 
               const SizedBox(height: 28),
@@ -159,17 +155,13 @@ class RiderSecuritySettings extends StatelessWidget {
               _SecurityTile(
                 icon: Icons.person_outline,
                 title: "Privacy Center",
-                onTap: () {
-                  // TODO: navigate to privacy center
-                },
+                onTap: () {},
               ),
               const SizedBox(height: 12),
               _SecurityTile(
                 icon: Icons.download_outlined,
                 title: "Download My Data",
-                onTap: () {
-                  // TODO: trigger data export
-                },
+                onTap: () {},
               ),
 
               const SizedBox(height: 28),
