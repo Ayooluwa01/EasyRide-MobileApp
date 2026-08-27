@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/api/error_exception.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
+import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -16,8 +17,8 @@ class ApiClient {
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   late final Dio _dio;
   late final Dio _refreshDio;
-  static const String _accessTokenKey = 'access-token';
-  static const String _refreshTokenKey = 'refresh-token';
+  static const String _accessTokenKey = StorageKeys.accessToken;
+  static const String _refreshTokenKey = StorageKeys.refreshToken;
 
   bool _isRefreshing = false;
 

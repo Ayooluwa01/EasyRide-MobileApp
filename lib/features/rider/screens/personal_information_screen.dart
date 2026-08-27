@@ -1,26 +1,40 @@
+import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/image_picker.dart';
+import 'package:easy_ride/features/auth/models/user/user_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class RiderPersonalInformationScreen extends StatefulWidget {
+class RiderPersonalInformationScreen extends ConsumerStatefulWidget {
   const RiderPersonalInformationScreen({super.key});
 
   @override
-  State<RiderPersonalInformationScreen> createState() =>
+  ConsumerState<RiderPersonalInformationScreen> createState() =>
       _RiderPersonalInformationScreenState();
 }
 
 class _RiderPersonalInformationScreenState
-    extends State<RiderPersonalInformationScreen>
+    extends ConsumerState<RiderPersonalInformationScreen>
     with ProfileImagePicker {
-  final _fullNameController = TextEditingController(text: "Amaka Obi");
-  final _emailController = TextEditingController(text: "amaka.obi@email.com");
-  final _phoneController = TextEditingController(text: "+234 812 345 6789");
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
 
-  DateTime? _dateOfBirth = DateTime(1995, 8, 15);
-  String? _gender = "Female";
+  DateTime? _dateOfBirth;
+  String? _gender;
+
+  bool _hasHydrated = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(currentUserProvider.notifier).getCurrentUser();
+    });
+  }
 
   @override
   void dispose() {
@@ -28,6 +42,14 @@ class _RiderPersonalInformationScreenState
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  void _hydrateFromUser(User user) {
+    if (_hasHydrated) return;
+    _fullNameController.text = user.fullName;
+    _emailController.text = user.email;
+    _phoneController.text = user.phone;
+    _hasHydrated = true;
   }
 
   Future<void> _pickDateOfBirth() async {
@@ -88,7 +110,6 @@ class _RiderPersonalInformationScreenState
                 thickness: 0.5,
                 color: colorScheme.onSurface.withValues(alpha: 0.08),
               ),
-              // Wheel picker
               SizedBox(
                 height: 220,
                 child: CupertinoDatePicker(
@@ -121,6 +142,7 @@ class _RiderPersonalInformationScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final userAsync = ref.watch(currentUserProvider);
 
     final syneBaseStyle = GoogleFonts.syne(
       fontSize: 30,
@@ -133,194 +155,231 @@ class _RiderPersonalInformationScreenState
     final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.5);
     final placeholderIconColor = colorScheme.onSurface.withValues(alpha: 0.3);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    Widget bodyContent;
+
+    if (userAsync.isLoading && userAsync.value == null) {
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else if (userAsync.hasError) {
+      bodyContent = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  IconButton(
-                    onPressed: () {
+              Text(
+                "Couldn't load your profile.",
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () =>
+                    ref.read(currentUserProvider.notifier).getCurrentUser(),
+                child: const Text("Retry"),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (userAsync.value == null) {
+      // build() returned null and fetch hasn't resolved yet (or user is genuinely absent)
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else {
+      final user = userAsync.value!;
+      _hydrateFromUser(user);
+
+      bodyContent = SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    }
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: colorScheme.onSurface,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Center(
+                  child: Text(
+                    "Personal Info",
+                    textAlign: TextAlign.center,
+                    style: syneBaseStyle.copyWith(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      // TODO: call an update-profile mutation here
+                      // before popping, e.g.
+                      // ref.read(userServiceProvider).updateMe(...)
                       if (context.canPop()) {
                         context.pop();
                       }
                     },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: colorScheme.onSurface,
-                      size: 18,
-                    ),
-                  ),
-
-                  SizedBox(width: 10),
-                  Center(
                     child: Text(
-                      "Personal Info",
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.end,
+                      "SAVE",
                       style: syneBaseStyle.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.primary,
                       ),
                     ),
                   ),
+                ),
+                const SizedBox(width: 30),
+              ],
+            ),
 
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        }
-                      },
-                      child: Text(
-                        textAlign: TextAlign.end,
-                        "SAVE",
-                        style: syneBaseStyle.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: colorScheme.primary,
+            const SizedBox(height: 24),
+
+            // profile picture
+            Align(
+              alignment: AlignmentGeometry.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular(22),
+                          image: DecorationImage(
+                            image: pickedImageFile != null
+                                ? FileImage(pickedImageFile!)
+                                : (user.profilePhotoUrl != null
+                                          ? NetworkImage(user.profilePhotoUrl!)
+                                          : const NetworkImage(
+                                              'https://i.pravatar.cc/150?img=32',
+                                            ))
+                                      as ImageProvider,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          height: 24,
+                          width: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.rectangle,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: colorScheme.surface,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => pickProfileImage(context),
+                            icon: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'CHANGE PROFILE PHOTO',
+                    style: interBaseStyle.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: mutedTextColor,
                     ),
                   ),
-                  const SizedBox(width: 30),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-              // profile picture
-              Align(
-                alignment: AlignmentGeometry.center,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.rectangle,
-                            borderRadius: BorderRadius.circular(22),
-                            image: DecorationImage(
-                              image: pickedImageFile != null
-                                  ? FileImage(pickedImageFile!)
-                                  : const NetworkImage(
-                                      'https://i.pravatar.cc/150?img=32',
-                                    ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            height: 24,
-                            width: 24,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              shape: BoxShape.rectangle,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: colorScheme.surface,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () => pickProfileImage(context),
-                              icon: const Icon(
-                                Icons.camera_alt_rounded,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'CHANGE PROFILE PHOTO',
-                      style: interBaseStyle.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: mutedTextColor,
-                      ),
-                    ),
-                  ],
+            // form
+            _FormField(
+              label: "FULL NAME",
+              child: _RoundedTextField(controller: _fullNameController),
+            ),
+            const SizedBox(height: 20),
+
+            _FormField(
+              label: "EMAIL ADDRESS",
+              child: _RoundedTextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _FormField(
+              label: "PHONE NUMBER",
+              child: _RoundedTextField(
+                controller: _phoneController,
+                enabled: false,
+                trailing: Icon(
+                  Icons.lock_outline_rounded,
+                  size: 16,
+                  color: placeholderIconColor,
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
 
-              const SizedBox(height: 32),
-
-              // form
-              _FormField(
-                label: "FULL NAME",
-                child: _RoundedTextField(controller: _fullNameController),
-              ),
-              const SizedBox(height: 20),
-
-              _FormField(
-                label: "EMAIL ADDRESS",
-                child: _RoundedTextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+            _FormField(
+              label: "DATE OF BIRTH",
+              child: _RoundedTapField(
+                value: _formattedDateOfBirth,
+                onTap: _pickDateOfBirth,
+                trailing: Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: placeholderIconColor,
                 ),
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              _FormField(
-                label: "PHONE NUMBER",
-                child: _RoundedTextField(
-                  controller: _phoneController,
-                  enabled: false,
-                  trailing: Icon(
-                    Icons.lock_outline_rounded,
-                    size: 16,
-                    color: placeholderIconColor,
-                  ),
-                ),
+            _FormField(
+              label: "GENDER",
+              child: _RoundedDropdownField(
+                value: _gender,
+                options: const ["Female", "Male", "Prefer not to say"],
+                onChanged: (value) => setState(() => _gender = value),
               ),
-              const SizedBox(height: 20),
-
-              _FormField(
-                label: "DATE OF BIRTH",
-                child: _RoundedTapField(
-                  value: _formattedDateOfBirth,
-                  onTap: _pickDateOfBirth,
-                  trailing: Icon(
-                    Icons.calendar_today_outlined,
-                    size: 16,
-                    color: placeholderIconColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _FormField(
-                label: "GENDER",
-                child: _RoundedDropdownField(
-                  value: _gender,
-                  options: const ["Female", "Male", "Prefer not to say"],
-                  onChanged: (value) => setState(() => _gender = value),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
-      ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(child: bodyContent),
     );
   }
 }

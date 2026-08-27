@@ -291,6 +291,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -319,6 +320,15 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   int _searchRequestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(currentUserProvider.notifier).getCurrentUser();
+    });
+  }
 
   @override
   void dispose() {
@@ -761,7 +771,8 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
         if (mounted) _applyMapStyle(isDark, colorScheme);
       });
     }
-
+    final data = ref.watch(currentUserProvider);
+    final user = data.value;
     ref.listen(locationProvider, (previous, next) {
       next.whenData((position) {
         if (_isFollowingUser && _mapboxController != null) {
@@ -838,7 +849,7 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'WELCOME, AMAKA',
+                                'WELCOME, ${user?.fullName.toUpperCase() ?? ""}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,

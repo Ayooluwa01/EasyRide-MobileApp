@@ -9,6 +9,7 @@ class Endpoints {
   static const String logout = '/auth/logout';
   static const String requestPhoneNumberChange = '/auth/phone/request-change';
   static const String verifyPhoneNumberChange = '/auth/phone/confirm-change';
+  static const String getMe = '/user/me';
 }
 
 class AuthRoutes {

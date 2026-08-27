@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
+import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/core/widgets/back_button.dart';
 import 'package:easy_ride/features/auth/controllers/login_controller.dart';
@@ -11,6 +13,7 @@ import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:easy_ride/features/auth/models/auth/otp_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
@@ -26,6 +29,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     with SingleTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
   final TextEditingController _pinController = TextEditingController();
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   Timer? _timer;
   int _remainingSeconds = 60;
@@ -102,7 +106,34 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
       if (!mounted) return;
 
       if (response.success) {
-        context.go(RouteNames.riderhomescreen);
+        await secureStorage.write(
+          key: StorageKeys.accessToken,
+          value: response.data.accessToken,
+        );
+
+        await secureStorage.write(
+          key: StorageKeys.refreshToken,
+          value: response.data.refreshToken,
+        );
+
+        await secureStorage.write(
+          key: StorageKeys.userRole,
+          value: response.data.user.role,
+        );
+
+        try {
+          await ref.read(currentUserProvider.notifier).getCurrentUser();
+
+          if (!mounted) return;
+
+          context.go(RouteNames.rider);
+        } catch (e) {
+          if (!mounted) return;
+
+          ref
+              .read(appToastProvider.notifier)
+              .showError('Unable to load your account.');
+        }
       }
     } catch (e) {
       if (!mounted) return;

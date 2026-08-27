@@ -1,9 +1,12 @@
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/option_tile.dart';
 import 'package:easy_ride/features/auth/controllers/login_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,8 +33,8 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
 
     final themeMode = ref.watch(themeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
-    final loginState = ref.watch(loginControllerProvider);
-    final user = loginState.value?.data.user;
+    final loginState = ref.watch(currentUserProvider);
+    final user = loginState.value;
     final dividerColor = colorScheme.onSurface.withValues(alpha: 0.08);
     final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.6);
 
@@ -98,51 +101,62 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user?.fullName ?? '',
-                          style: syneBaseStyle.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
+                        Center(
+                          child: Text(
+                            textAlign: TextAlign.center,
+                            user?.fullName ?? '',
+                            style: syneBaseStyle.copyWith(
+                              fontSize: 20,
+
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          'amaka.obi@email.com',
-                          style: TextStyle(fontSize: 13, color: mutedTextColor),
+                        Center(
+                          child: Text(
+                            user?.email ?? '',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: mutedTextColor,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 12,
-                                color: Color(0xFF4CAF50),
-                              ),
-                              SizedBox(width: 4),
-                              Center(
-                                child: Text(
-                                  textAlign: TextAlign.center,
-                                  '4.98 RIDER',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF4CAF50),
-                                    letterSpacing: 0.5,
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 12,
+                                  color: Color(0xFF4CAF50),
+                                ),
+                                const SizedBox(width: 4),
+                                Center(
+                                  child: Text(
+                                    textAlign: TextAlign.center,
+                                    user?.role ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF4CAF50),
+                                      letterSpacing: 0.5,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -370,12 +384,17 @@ class _SignOutButton extends StatelessWidget {
   final VoidCallback? onTap;
   final ColorScheme colorScheme;
   final bool isDark;
-
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   const _SignOutButton({
     this.onTap,
     required this.colorScheme,
     required this.isDark,
   });
+
+  void _signout() async {
+    await secureStorage.delete(key: StorageKeys.accessToken);
+    await secureStorage.delete(key: StorageKeys.refreshToken);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +404,7 @@ class _SignOutButton extends StatelessWidget {
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: onTap,
+          onTap: _signout,
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
