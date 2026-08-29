@@ -3,7 +3,6 @@ import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/option_tile.dart';
-import 'package:easy_ride/features/auth/controllers/login_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';

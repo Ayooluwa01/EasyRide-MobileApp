@@ -1,4 +1,4 @@
-// import 'package:easy_ride/app/shared/bottom_nav.dart';
+import 'package:easy_ride/app/services/websocket.dart';
 import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
@@ -30,6 +30,7 @@ final appRouter = GoRouter(
     final location = state.matchedLocation;
 
     if (isAuthenticated) {
+      Websocket().initialize(accessToken);
       if (location == RouteNames.splash ||
           location == RouteNames.login ||
           location == RouteNames.signup ||
@@ -42,6 +43,7 @@ final appRouter = GoRouter(
     }
 
     if (!isAuthenticated && location == RouteNames.rider) {
+      Websocket().dispose();
       return RouteNames.getstarted;
     }
 
