@@ -291,11 +291,13 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -898,8 +900,8 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: InkWell(
-                      onTap: () =>
-                          _showWhereToBottomSheet(context, colorScheme, isDark),
+                      onTap: () => context.push(RouteNames.requestride),
+                      // _showWhereToBottomSheet(context, colorScheme, isDark),
                       borderRadius: BorderRadius.circular(24),
                       child: Padding(
                         padding: const EdgeInsets.all(12),

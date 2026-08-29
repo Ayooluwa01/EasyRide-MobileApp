@@ -36,7 +36,7 @@ class Websocket {
     _accessToken = accessToken;
 
     _socket = io.io(
-      'YOUR_SOCKET_URL',
+      'http://127.0.0.1:3000',
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': accessToken})

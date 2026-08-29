@@ -11,4 +11,5 @@ class RouteNames {
   static const riderpaymentinformation = '/riderpaymentinformation';
   static const ridernotification = '/ridernotification';
   static const ridersecurity = '/ridersecurity';
+  static const requestride = '/requestride';
 }

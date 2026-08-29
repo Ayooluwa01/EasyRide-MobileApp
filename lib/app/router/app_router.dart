@@ -6,6 +6,7 @@ import 'package:easy_ride/features/auth/screens/signup_screen.dart';
 import 'package:easy_ride/features/rider/screens/chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/payment_method.dart';
 import 'package:easy_ride/features/rider/screens/personal_information_screen.dart';
+import 'package:easy_ride/features/rider/screens/request_ride_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_notification_screen.dart';
@@ -146,6 +147,12 @@ final appRouter = GoRouter(
         final chatObject = state.extra as ChatPreview;
 
         return ChatScreen(chatId: chatId, chat: chatObject);
+      },
+    ),
+    GoRoute(
+      path: '/requestride',
+      builder: (context, state) {
+        return const RequestRideScreen();
       },
     ),
   ],

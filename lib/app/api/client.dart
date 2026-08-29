@@ -87,6 +87,10 @@ class ApiClient {
         // ERROR
         // --------------------------------------------------
         onError: (DioException error, ErrorInterceptorHandler handler) async {
+          developer.log(
+            'ERROR type=${error.type} status=${error.response?.statusCode}',
+            name: 'ApiClient',
+          );
           final statusCode = error.response?.statusCode;
 
           if (statusCode != 401) {
@@ -117,6 +121,7 @@ class ApiClient {
           _isRefreshing = true;
 
           try {
+            print("refreshing accessToken");
             final newAccessToken = await _refreshAccessToken();
             if (newAccessToken == null || newAccessToken.isEmpty) {
               await _logout();
