@@ -21,7 +21,6 @@ class UserController extends AsyncNotifier<User?> {
       return user;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-      rethrow;
     }
   }
 }

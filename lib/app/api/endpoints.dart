@@ -10,6 +10,8 @@ class Endpoints {
   static const String requestPhoneNumberChange = '/auth/phone/request-change';
   static const String verifyPhoneNumberChange = '/auth/phone/confirm-change';
   static const String getMe = '/user/me';
+  static const String getLocations = '/mapbox/locations';
+  static const String getRoute = '/mapbox/route';
 }
 
 class AuthRoutes {

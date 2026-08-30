@@ -171,6 +171,7 @@ class ApiClient {
         return null;
       }
       await secureStorage.write(key: _accessTokenKey, value: newAccessToken);
+      developer.log("new accessToken Stored");
       final newRefreshToken = data['refreshToken'] as String?;
 
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {

@@ -19,8 +19,6 @@ class UserService {
     try {
       final response = await _apiClient.get(Endpoints.getMe);
 
-      developer.log('GET /me response: ${response.data}');
-
       return User.fromJson(response.data['data']);
     } catch (e, stackTrace) {
       developer.log(
