@@ -12,6 +12,7 @@ class Endpoints {
   static const String getMe = '/user/me';
   static const String getLocations = '/mapbox/locations';
   static const String getRoute = '/mapbox/route';
+  static const String rides = '/rides';
 }
 
 class AuthRoutes {

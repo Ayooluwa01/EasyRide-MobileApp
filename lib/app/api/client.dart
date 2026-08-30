@@ -102,6 +102,11 @@ class ApiClient {
           final alreadyRetried = request.extra['alreadyRetried'] == true;
 
           if (alreadyRetried) {
+            developer.log(
+              'SECOND 401 RAW: ${error.response?.data}',
+              name: 'ApiClient',
+            );
+
             await _logout();
             handler.next(_unwrap(error));
             return;
@@ -121,14 +126,15 @@ class ApiClient {
           _isRefreshing = true;
 
           try {
-            print("refreshing accessToken");
+            print("refreshing accessToken now");
             final newAccessToken = await _refreshAccessToken();
+
             if (newAccessToken == null || newAccessToken.isEmpty) {
               await _logout();
               handler.next(_unwrap(error));
               return;
             }
-
+            print("Proceeding with refresh request");
             request.extra['alreadyRetried'] = true;
             request.headers['Authorization'] = 'Bearer $newAccessToken';
 
@@ -150,30 +156,33 @@ class ApiClient {
   // --------------------------------------------------
 
   Future<String?> _refreshAccessToken() async {
+    developer.log("Attempting to refreshToken");
     final refreshToken = await secureStorage.read(key: _refreshTokenKey);
     if (refreshToken == null || refreshToken.isEmpty) {
       return null;
     }
 
     try {
+      developer.log("SENDING DATA TO BACKEND TO REFRESH TOKEN");
       final response = await _refreshDio.post(
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
       );
-
       final data = response.data;
       if (data == null) {
         return null;
       }
+      final tokens = data['data']?['tokens'] as Map<String, dynamic>?;
+      if (tokens == null) {
+        return null;
+      }
 
-      final newAccessToken = data['accessToken'] as String?;
+      final newAccessToken = tokens['accessToken'] as String?;
       if (newAccessToken == null || newAccessToken.isEmpty) {
         return null;
       }
       await secureStorage.write(key: _accessTokenKey, value: newAccessToken);
-      developer.log("new accessToken Stored");
-      final newRefreshToken = data['refreshToken'] as String?;
-
+      final newRefreshToken = tokens['refreshToken'] as String?;
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
         await secureStorage.write(
           key: _refreshTokenKey,

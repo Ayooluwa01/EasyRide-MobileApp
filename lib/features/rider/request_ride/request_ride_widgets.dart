@@ -1,6 +1,7 @@
+import 'package:easy_ride/app/theme/app_text_styling.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+export 'request_ride_searching_radar.dart';
 import 'request_ride_models.dart';
 
 class RequestRideIconButton extends StatelessWidget {
@@ -381,6 +382,86 @@ class RequestRideTripSummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AvailableDrivers extends StatelessWidget {
+  const AvailableDrivers({
+    super.key,
+    required this.isDark,
+    required this.colorScheme,
+    required this.drivers,
+    int? count,
+  }) : _count = count;
+
+  final bool isDark;
+  final ColorScheme colorScheme;
+  final List<dynamic> drivers;
+
+  final int? _count;
+  int get displayCount => _count ?? drivers.length;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 260),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161616) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black38,
+            blurRadius: 20,
+            offset: Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$displayCount DRIVERS NEARBY',
+            style: GoogleFonts.syne(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            // TextStyle(
+            //   fontSize: 10,
+            //   fontWeight: FontWeight.w700,
+            //   letterSpacing: 0.6,
+            //   color: colorScheme.onSurfaceVariant,
+            // ),
+          ),
+          const SizedBox(height: 12),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: drivers.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                indent: 56,
+                color: isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.05),
+              ),
+              itemBuilder: (context, index) {
+                final item = drivers[index];
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // ROW LIST OF NEARBY DRIVERS
+                  ],
+                );
+              },
             ),
           ),
         ],

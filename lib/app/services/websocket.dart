@@ -39,7 +39,8 @@ class Websocket {
       'http://127.0.0.1:3000',
       io.OptionBuilder()
           .setTransports(['websocket'])
-          .setAuth({'token': accessToken})
+          // .setAuth({'Authorization': 'Bearer $accessToken'})
+          .setExtraHeaders({'Authorization': 'Bearer $accessToken'})
           .enableReconnection()
           .setReconnectionAttempts(10)
           .setReconnectionDelay(1000)

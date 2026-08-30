@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: invalid_use_of_protected_member, library_private_types_in_public_api
 
 part of 'request_ride_screen.dart';
 
@@ -321,15 +321,58 @@ extension RequestRideLogic on _RequestRideScreenState {
     unawaited(_removeRouteLineLayer());
   }
 
-  void _confirmRide() {
+  Future<void> _confirmRide() async {
     final destination = _selectedDestination;
-    if (destination == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Requesting a ride to ${destination.title}...'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
+
+    if (destination == null || _isConfirmingRide) return;
+
+    final pickup = _pickupLatLng;
+
+    final request = RequestRideModel(
+      pickupLat: pickup.lat,
+      pickupLng: pickup.lng,
+      dropoffLat: destination.lat,
+      dropoffLng: destination.lng,
+      paymentMethod: 'CASH',
+      pickupAddress: 'Current location',
+      dropoffAddress: destination.title,
     );
+
+    setState(() {
+      _isConfirmingRide = true;
+    });
+
+    try {
+      final response = await ref.read(requestRideProvider).requestRide(request);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isConfirmingRide = false;
+        _searchNearbyDrivers = true;
+        _rideId = response.data.rideId;
+        _nearbyDriversCount = response.data.nearbyDrivers;
+      });
+    } catch (error, stackTrace) {
+      developer.log(
+        'REQUEST RIDE FAILED',
+        name: 'RequestRideScreen',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isConfirmingRide = false;
+      });
+
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Error: $error'),
+      //     behavior: SnackBarBehavior.floating,
+      //   ),
+      // );
+    }
   }
 }
