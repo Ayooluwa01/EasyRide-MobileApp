@@ -18,11 +18,13 @@ class RideDestination {
 @immutable
 class RouteInfo {
   const RouteInfo({
+    required this.baseFare,
     required this.coordinates,
     required this.distanceMeters,
     required this.durationSeconds,
   });
 
+  final num baseFare;
   final List<List<double>> coordinates;
   final double distanceMeters;
   final double durationSeconds;
@@ -34,4 +36,6 @@ class RouteInfo {
     final minutes = (durationSeconds / 60).round();
     return '$minutes min';
   }
+
+  String get fareLabel => '₦${baseFare.toStringAsFixed(0)}';
 }

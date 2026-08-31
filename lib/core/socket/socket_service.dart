@@ -1,1 +1,5 @@
-class SocketService {}
+class SocketService {
+  // onMessage Recieve
+
+  // EmitMessage
+}

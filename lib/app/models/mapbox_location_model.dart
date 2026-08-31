@@ -89,11 +89,13 @@ class GetRouteResponse {
 }
 
 class RouteData {
+  final num baseFare;
   final List<List<double>> coordinates;
   final double distanceMeters;
   final double durationSeconds;
 
   RouteData({
+    required this.baseFare,
     required this.coordinates,
     required this.distanceMeters,
     required this.durationSeconds,
@@ -101,6 +103,7 @@ class RouteData {
 
   factory RouteData.fromJson(Map<String, dynamic> json) {
     return RouteData(
+      baseFare: json['baseFare'] as num,
       coordinates: (json['coordinates'] as List<dynamic>)
           .map(
             (coordinate) => (coordinate as List<dynamic>)

@@ -14,9 +14,16 @@ extension RequestRideLogic on _RequestRideScreenState {
         .createCircleAnnotationManager();
     _destAnnotationManager = await controller.annotations
         .createCircleAnnotationManager();
+    _driversAnnotationManager = await controller.annotations
+        .createCircleAnnotationManager(); // new
 
     final pickup = _pickupLatLng;
     await _drawPickupMarker(pickup.lat, pickup.lng);
+
+    final nearby = ref.read(nearbyDriversProvider);
+    final drivers =
+        (nearby is Map ? nearby['drivers'] as List<dynamic>? : null) ?? [];
+    await _updateDriverMarkers(drivers);
 
     await controller.easeTo(
       CameraOptions(
@@ -40,6 +47,49 @@ extension RequestRideLogic on _RequestRideScreenState {
         circleStrokeColor: const Color(0xFF1E1E1E).toARGB32(),
       ),
     );
+  }
+
+  Future<void> _updateDriverMarkers(List<dynamic> drivers) async {
+    final manager = _driversAnnotationManager;
+    if (manager == null) return;
+
+    final incomingIds = <String>{};
+    for (int i = 0; i < drivers.length; i++) {
+      final driver = drivers[i];
+      final id = '${driver['driverId']}';
+      final lat = (driver['latitude'] as num?)?.toDouble();
+      final lng = (driver['longitude'] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+
+      incomingIds.add(id);
+      final point = Point(coordinates: Position(lng, lat));
+      final existing = _driverAnnotations[id];
+
+      if (existing != null) {
+        existing.geometry = point;
+        await manager.update(existing);
+      } else {
+        final created = await manager.create(
+          CircleAnnotationOptions(
+            geometry: point,
+            circleRadius: 7,
+            circleColor: const Color.fromARGB(255, 42, 12, 12).toARGB32(),
+            circleStrokeWidth: 2.5,
+            circleStrokeColor: Colors.white.toARGB32(),
+          ),
+        );
+        _driverAnnotations[id] = created;
+      }
+    }
+
+    final staleIds = _driverAnnotations.keys
+        .where((id) => !incomingIds.contains(id))
+        .toList();
+
+    for (int i = 0; i < staleIds.length; i++) {
+      final annotation = _driverAnnotations.remove(staleIds[i]);
+      if (annotation != null) await manager.delete(annotation);
+    }
   }
 
   Future<void> _drawDestinationMarker(
@@ -304,6 +354,7 @@ extension RequestRideLogic on _RequestRideScreenState {
             .toList(),
         distanceMeters: route.distanceMeters.toDouble(),
         durationSeconds: route.durationSeconds.toDouble(),
+        baseFare: route.baseFare,
       );
     } catch (_) {
       return null;
@@ -321,7 +372,7 @@ extension RequestRideLogic on _RequestRideScreenState {
     unawaited(_removeRouteLineLayer());
   }
 
-  Future<void> _confirmRide() async {
+  Future<void> _confirmRide(num offeredFare) async {
     final destination = _selectedDestination;
 
     if (destination == null || _isConfirmingRide) return;
@@ -336,6 +387,7 @@ extension RequestRideLogic on _RequestRideScreenState {
       paymentMethod: 'CASH',
       pickupAddress: 'Current location',
       dropoffAddress: destination.title,
+      fare: offeredFare,
     );
 
     setState(() {
@@ -366,13 +418,6 @@ extension RequestRideLogic on _RequestRideScreenState {
       setState(() {
         _isConfirmingRide = false;
       });
-
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Error: $error'),
-      //     behavior: SnackBarBehavior.floating,
-      //   ),
-      // );
     }
   }
 }

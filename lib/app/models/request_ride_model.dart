@@ -6,12 +6,14 @@ class RequestRideModel {
   final String? paymentMethod;
   final String? pickupAddress;
   final String? dropoffAddress;
+  final num fare;
 
   const RequestRideModel({
     required this.pickupLat,
     required this.pickupLng,
     required this.dropoffLat,
     required this.dropoffLng,
+    required this.fare,
     this.paymentMethod,
     this.pickupAddress,
     this.dropoffAddress,
@@ -26,6 +28,7 @@ class RequestRideModel {
       'pickupAddress': pickupAddress,
       'dropoffAddress': dropoffAddress,
       'paymentMethod': paymentMethod,
+      'fare': fare,
     };
   }
 }

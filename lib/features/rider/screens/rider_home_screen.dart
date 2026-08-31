@@ -319,9 +319,9 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   // Search State
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
-  List<Map<String, dynamic>> _searchResults = [];
-  bool _isSearching = false;
-  int _searchRequestId = 0;
+  final List<Map<String, dynamic>> _searchResults = [];
+  final bool _isSearching = false;
+  final int _searchRequestId = 0;
 
   @override
   void initState() {

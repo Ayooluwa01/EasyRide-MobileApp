@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
@@ -8,6 +10,8 @@ import 'package:easy_ride/app/services/request_ride.dart';
 import 'package:easy_ride/app/services/route_service.dart';
 import 'package:easy_ride/app/services/suggestions_service.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
+import 'package:easy_ride/core/controllers/driver_offers.dart';
+import 'package:easy_ride/core/controllers/nearby_drivers.dart';
 import 'package:easy_ride/features/rider/request_ride/request_ride_models.dart';
 import 'package:easy_ride/features/rider/request_ride/request_ride_widgets.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +30,7 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   MapboxMap? _mapboxController;
   CircleAnnotationManager? _pickupAnnotationManager;
   CircleAnnotationManager? _destAnnotationManager;
+  CircleAnnotationManager? _driversAnnotationManager;
 
   static const String _routeSourceId = 'route-line-source';
   static const String _routeCasingLayerId = 'route-line-casing';
@@ -44,6 +49,7 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   bool _isConfirmingRide = false;
   String? _rideId;
   int _nearbyDriversCount = 0;
+  final Map<String, CircleAnnotation> _driverAnnotations = {};
 
   static const double _fallbackLat = 6.5244;
   static const double _fallbackLng = 3.3792;
@@ -70,6 +76,21 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    ref.listen<dynamic>(nearbyDriversProvider, (previous, next) {
+      final driverList =
+          (next is Map ? next['drivers'] as List<dynamic>? : null) ?? [];
+      unawaited(_updateDriverMarkers(driverList));
+    });
+
+    final nearbyDrivers = ref.watch(nearbyDriversProvider);
+    final rideroffers = ref.watch(driverOfferProvider);
+    final drivers =
+        (nearbyDrivers is Map
+            ? nearbyDrivers['drivers'] as List<dynamic>?
+            : null) ??
+        [];
+    final count = drivers.length;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -143,14 +164,11 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                       destination: _selectedDestination!,
                       routeInfo: _routeInfo,
                       isLoading: _isRoutingLoading || _isConfirmingRide,
-                      onConfirm: _confirmRide,
+                      onConfirm: (offeredFare) => _confirmRide(offeredFare),
                     ),
                   ),
                 ),
             ] else ...[
-              // Searching for nearby drivers: radar pulses over the map,
-              // and the drivers panel sits fixed at the bottom. This
-              // replaces (not stacks on top of) the search UI above.
               Positioned.fill(
                 child: IgnorePointer(
                   child: Center(
@@ -170,8 +188,8 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                   child: AvailableDrivers(
                     isDark: isDark,
                     colorScheme: colorScheme,
-                    count: _nearbyDriversCount,
-                    drivers: const [],
+                    count: count,
+                    drivers: drivers,
                   ),
                 ),
               ),
