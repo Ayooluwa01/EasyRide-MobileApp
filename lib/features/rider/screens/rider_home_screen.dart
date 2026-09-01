@@ -290,16 +290,15 @@
 // }
 
 import 'dart:async';
-import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/check_active_ride.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class RiderHomeScreen extends ConsumerStatefulWidget {
@@ -328,8 +327,28 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(currentUserProvider.notifier).getCurrentUser();
+      _initializeHome();
     });
+  }
+
+  Future<void> _initializeHome() async {
+    if (!mounted) return;
+
+    await ref.read(currentUserProvider.notifier).getCurrentUser();
+
+    try {
+      final activeRide = await ref
+          .read(checkActiveRideProvider)
+          .checkActiveRideForRider();
+      developer.log('Active ride check result: $activeRide');
+      if (!mounted) return;
+
+      if (activeRide != null) {
+        context.go(RouteNames.activeride, extra: activeRide.id);
+      }
+    } catch (e) {
+      debugPrint('Failed to check active ride: $e');
+    }
   }
 
   @override

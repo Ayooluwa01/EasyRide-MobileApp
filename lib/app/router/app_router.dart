@@ -159,14 +159,30 @@ final appRouter = GoRouter(
         return const RequestRideScreen();
       },
     ),
+    // GoRoute(
+    //   path: '/activeride',
+    //   builder: (context, state) {
+    //     developer.log('ActiveRide route extra: ${state.extra}');
+    //     final extra = state.extra as Map<String, dynamic>?;
+    //     final rideId = extra?['rideId'] as String?;
+
+    //     if (rideId == null) {
+    //       return const Scaffold(
+    //         body: Center(child: Text('No active ride found')),
+    //       );
+    //     }
+
+    //     return ActiveRideScreen(rideId: rideId);
+    //   },
+    // ),
     GoRoute(
       path: '/activeride',
       builder: (context, state) {
         developer.log('ActiveRide route extra: ${state.extra}');
-        final extra = state.extra as Map<String, dynamic>?;
-        final rideId = extra?['rideId'] as String?;
 
-        if (rideId == null) {
+        final rideId = state.extra as String?;
+
+        if (rideId == null || rideId.isEmpty) {
           return const Scaffold(
             body: Center(child: Text('No active ride found')),
           );
