@@ -3,6 +3,7 @@ import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
+import 'package:easy_ride/features/rider/active_ride/active_ride_screen.dart';
 import 'package:easy_ride/features/rider/screens/chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/payment_method.dart';
 import 'package:easy_ride/features/rider/screens/personal_information_screen.dart';
@@ -153,6 +154,12 @@ final appRouter = GoRouter(
       path: '/requestride',
       builder: (context, state) {
         return const RequestRideScreen();
+      },
+    ),
+    GoRoute(
+      path: '/activeride',
+      builder: (context, state) {
+        return const ActiveRideScreen();
       },
     ),
   ],
