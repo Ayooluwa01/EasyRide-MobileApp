@@ -1,8 +1,12 @@
+import 'dart:developer' as developer;
+
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/theme/app_text_styling.dart';
 import 'package:easy_ride/core/controllers/driver_offers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 export 'request_ride_searching_radar.dart';
 import 'request_ride_models.dart';
@@ -629,7 +633,6 @@ class AvailableDrivers extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle for a more "sheet"-like feel.
           Center(
             child: Container(
               width: 36,
@@ -746,15 +749,41 @@ class AvailableDrivers extends ConsumerWidget {
                       offer: offer,
                       isDark: isDark,
                       colorScheme: colorScheme,
-                      onAccept: () {
-                        ref
-                            .read(driverOfferProvider.notifier)
-                            .acceptOffer(offer);
+                      onAccept: () async {
+                        try {
+                          final response = await ref
+                              .read(driverOfferProvider.notifier)
+                              .acceptOffer(offer);
+                          developer.log(
+                            'Accept result — success: ${response.success}, rideId: ${response.rideId}',
+                          );
+                          if (!context.mounted) return;
+                          if (response.success) {
+                            context.go(
+                              RouteNames.activeride,
+                              extra: {'rideId': response.rideId},
+                            );
+                          }
+                        } catch (e) {
+                          if (!context.mounted) return;
+                        }
                       },
-                      onReject: () {
-                        ref
-                            .read(driverOfferProvider.notifier)
-                            .rejectOffer(offer);
+                      onReject: () async {
+                        try {
+                          await ref
+                              .read(driverOfferProvider.notifier)
+                              .rejectOffer(offer);
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          // ScaffoldMessenger.of(context).showSnackBar(
+                          //   const SnackBar(
+                          //     content: Text(
+                          //       'Could not reject this offer. Please try again.',
+                          //     ),
+                          //     behavior: SnackBarBehavior.floating,
+                          //   ),
+                          // );
+                        }
                       },
                     ),
                   );
@@ -1055,137 +1084,3 @@ class _DriverOfferCard extends StatelessWidget {
 
 // ignore: constant_identifier_names
 enum PaymentMethod { CASH, TRANSFER }
-
-class DriverOffersList extends ConsumerWidget {
-  const DriverOffersList({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final offers = ref.watch(driverOfferProvider);
-
-    if (offers.isEmpty) {
-      return const Center(child: Text('Waiting for driver offers...'));
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: offers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final offer = offers[index];
-
-        return TweenAnimationBuilder<double>(
-          key: ValueKey(offer['driver']['id']),
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutBack,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value.clamp(0, 1),
-              child: Transform.translate(
-                offset: Offset(0, 30 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: _OfferCard(
-            offer: offer,
-            onAccept: () {
-              ref.read(driverOfferProvider.notifier).acceptOffer(offer);
-            },
-            onReject: () {
-              ref.read(driverOfferProvider.notifier).rejectOffer(offer);
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _OfferCard extends StatelessWidget {
-  final dynamic offer;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-
-  const _OfferCard({
-    required this.offer,
-    required this.onAccept,
-    required this.onReject,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final driver = offer['driver'];
-
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage: driver['photo'] != null
-                      ? NetworkImage(driver['photo'])
-                      : null,
-                  child: driver['photo'] == null
-                      ? const Icon(Icons.person)
-                      : null,
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        driver['name'] ?? 'Unknown driver',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        '₦${driver['amount']}',
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onReject,
-                    child: const Text('Reject'),
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onAccept,
-                    child: const Text('Accept'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

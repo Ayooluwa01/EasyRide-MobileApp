@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:easy_ride/app/services/websocket.dart';
 import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
@@ -13,6 +15,7 @@ import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_notification_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_security_screen.dart';
 import 'package:easy_ride/features/splash/splash_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
@@ -159,7 +162,17 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/activeride',
       builder: (context, state) {
-        return const ActiveRideScreen();
+        developer.log('ActiveRide route extra: ${state.extra}');
+        final extra = state.extra as Map<String, dynamic>?;
+        final rideId = extra?['rideId'] as String?;
+
+        if (rideId == null) {
+          return const Scaffold(
+            body: Center(child: Text('No active ride found')),
+          );
+        }
+
+        return ActiveRideScreen(rideId: rideId);
       },
     ),
   ],

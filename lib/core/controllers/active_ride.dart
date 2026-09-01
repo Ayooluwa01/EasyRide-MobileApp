@@ -32,7 +32,13 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   }
 
   // ============================================================
+  // EMIT JOIN RIDE TO SERVER
   // ============================================================
+  // ignore: non_constant_identifier_names
+  void joinRide(String RideId) {
+    _socket.emit(SocketEvents.rideJoin, RideId);
+    developer.log('Joined ride: $RideId', name: 'ActiveRide');
+  }
 
   void setRide(Map<String, dynamic> ride) {
     state = Map<String, dynamic>.from(ride);
@@ -137,6 +143,7 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   void _onDriverLocation(dynamic data) {
     if (data is! Map) return;
     final incoming = Map<String, dynamic>.from(data);
+    developer.log('Driver location update: $incoming');
     if (!_belongsToCurrentRide(incoming)) {
       return;
     }
