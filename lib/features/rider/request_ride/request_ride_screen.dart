@@ -16,6 +16,7 @@ import 'package:easy_ride/features/rider/request_ride/request_ride_models.dart';
 import 'package:easy_ride/features/rider/request_ride/request_ride_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 part 'request_ride_logic.dart';
 
@@ -50,7 +51,7 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   String? _rideId;
   int _nearbyDriversCount = 0;
   final Map<String, CircleAnnotation> _driverAnnotations = {};
-
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.CASH;
   static const double _fallbackLat = 6.5244;
   static const double _fallbackLng = 3.3792;
 
@@ -84,7 +85,7 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
     });
 
     final nearbyDrivers = ref.watch(nearbyDriversProvider);
-    final rideroffers = ref.watch(driverOfferProvider);
+    // final rideroffers = ref.watch(driverOfferProvider);
     final drivers =
         (nearbyDrivers is Map
             ? nearbyDrivers['drivers'] as List<dynamic>?
@@ -115,7 +116,11 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                   icon: Icons.arrow_back_rounded,
                   isDark: isDark,
                   colorScheme: colorScheme,
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () {
+                    ref.read(driverOfferProvider.notifier).clearOffers();
+
+                    context.pop();
+                  },
                 ),
               ),
             ),
@@ -158,13 +163,43 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                   child: AnimatedPadding(
                     duration: const Duration(milliseconds: 150),
                     padding: EdgeInsets.only(bottom: bottomInset),
-                    child: RequestRideTripSummaryCard(
-                      isDark: isDark,
-                      colorScheme: colorScheme,
-                      destination: _selectedDestination!,
-                      routeInfo: _routeInfo,
-                      isLoading: _isRoutingLoading || _isConfirmingRide,
-                      onConfirm: (offeredFare) => _confirmRide(offeredFare),
+                    child: Column(
+                      children: [
+                        RequestRideTripSummaryCard(
+                          isDark: isDark,
+                          colorScheme: colorScheme,
+                          destination: _selectedDestination!,
+                          routeInfo: _routeInfo,
+                          isLoading: _isRoutingLoading || _isConfirmingRide,
+                          onConfirm: (offeredFare) => _confirmRide(offeredFare),
+                          paymentSelector: Row(
+                            children: [
+                              Expanded(
+                                child: paymentCard(
+                                  method: PaymentMethod.CASH,
+                                  title: 'Cash',
+                                  subtitle: 'Pay driver directly',
+                                  icon: Icons.payments_outlined,
+                                  theme: theme,
+                                  colorScheme: colorScheme,
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: paymentCard(
+                                  method: PaymentMethod.TRANSFER,
+                                  title: 'Transfer',
+                                  subtitle: 'Pay via bank transfer',
+                                  icon: Icons.account_balance_outlined,
+                                  theme: theme,
+                                  colorScheme: colorScheme,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

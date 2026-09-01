@@ -1,6 +1,8 @@
 import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/theme/app_text_styling.dart';
+import 'package:easy_ride/core/controllers/driver_offers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 export 'request_ride_searching_radar.dart';
 import 'request_ride_models.dart';
@@ -264,6 +266,7 @@ class RequestRideTripSummaryCard extends StatefulWidget {
     required this.routeInfo,
     required this.isLoading,
     required this.onConfirm,
+    required this.paymentSelector,
   });
 
   final bool isDark;
@@ -271,6 +274,7 @@ class RequestRideTripSummaryCard extends StatefulWidget {
   final RideDestination destination;
   final RouteInfo? routeInfo;
   final bool isLoading;
+  final Widget paymentSelector;
 
   final ValueChanged<num> onConfirm;
 
@@ -425,6 +429,10 @@ class _RequestRideTripSummaryCardState
               onIncrement: offeredFare < routeInfo.baseFare ? _increment : null,
             ),
           ],
+
+          const SizedBox(height: 16),
+          widget.paymentSelector,
+
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -583,7 +591,7 @@ class _FareStepButton extends StatelessWidget {
   }
 }
 
-class AvailableDrivers extends StatelessWidget {
+class AvailableDrivers extends ConsumerWidget {
   const AvailableDrivers({
     super.key,
     required this.isDark,
@@ -596,12 +604,15 @@ class AvailableDrivers extends StatelessWidget {
   final ColorScheme colorScheme;
   final List<dynamic> drivers;
   final int? _count;
+
   int get displayCount => _count ?? drivers.length;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offers = ref.watch(driverOfferProvider);
+
     return Container(
-      constraints: const BoxConstraints(maxHeight: 320),
+      constraints: const BoxConstraints(maxHeight: 560),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161616) : Colors.white,
@@ -618,101 +629,182 @@ class AvailableDrivers extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Drag handle for a more "sheet"-like feel.
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white12 : Colors.black12,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+
+          // =========================
+          // NEARBY DRIVERS
+          // =========================
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '$displayCount DRIVERS NEARBY',
                 style: GoogleFonts.syne(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF34C759),
-                  shape: BoxShape.circle,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'LIVE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: isDark ? Colors.white38 : Colors.black38,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF34C759),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: drivers.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                indent: 56,
-                color: isDark
-                    ? Colors.white10
-                    : Colors.black.withValues(alpha: 0.05),
-              ),
-              itemBuilder: (context, index) {
-                final driver = drivers[index] as Map<String, dynamic>;
-                final driverId = '${driver['driverId']}';
-                final distanceMeters =
-                    (driver['distanceFromPickupMeters'] as num?)?.toDouble();
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: isDark
-                            ? Colors.white10
-                            : colorScheme.primaryContainer,
-                        child: Text(
-                          driverId.isNotEmpty ? driverId[0].toUpperCase() : '?',
-                          style: GoogleFonts.syne(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: isDark
-                                ? Colors.white
-                                : colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Driver $driverId',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatDistance(distanceMeters),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.directions_car_filled_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                );
-              },
+          // =========================
+          // DRIVER OFFERS
+          // =========================
+          if (offers.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Divider(
+              height: 1,
+              color: isDark
+                  ? Colors.white10
+                  : Colors.black.withValues(alpha: 0.06),
             ),
-          ),
+            const SizedBox(height: 20),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                itemCount: offers.length,
+                padding: EdgeInsets.zero,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final offer = offers[index];
+
+                  return TweenAnimationBuilder<double>(
+                    key: ValueKey(offer['driver']['id']),
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutBack,
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value.clamp(0, 1),
+                        child: Transform.translate(
+                          offset: Offset(40 * (1 - value), 0),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _DriverOfferCard(
+                      offer: offer,
+                      isDark: isDark,
+                      colorScheme: colorScheme,
+                      onAccept: () {
+                        ref
+                            .read(driverOfferProvider.notifier)
+                            .acceptOffer(offer);
+                      },
+                      onReject: () {
+                        ref
+                            .read(driverOfferProvider.notifier)
+                            .rejectOffer(offer);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 20),
+            Divider(
+              height: 1,
+              color: isDark
+                  ? Colors.white10
+                  : Colors.black.withValues(alpha: 0.06),
+            ),
+            const SizedBox(height: 36),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Waiting for driver offers…',
+                    style: GoogleFonts.syne(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nearby drivers are reviewing your trip',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white38 : Colors.black38,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
         ],
       ),
     );
@@ -720,7 +812,380 @@ class AvailableDrivers extends StatelessWidget {
 
   String _formatDistance(double? meters) {
     if (meters == null) return 'Nearby';
-    if (meters < 1000) return '${meters.round()} m away';
+
+    if (meters < 1000) {
+      return '${meters.round()} m away';
+    }
+
     return '${(meters / 1000).toStringAsFixed(1)} km away';
+  }
+}
+
+class _DriverOfferCard extends StatelessWidget {
+  const _DriverOfferCard({
+    required this.offer,
+    required this.isDark,
+    required this.colorScheme,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  final dynamic offer;
+  final bool isDark;
+  final ColorScheme colorScheme;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final driver = offer['driver'];
+
+    final String? photo = driver['photo'];
+    final String name = driver['name'] ?? 'Driver';
+    final amountValue = driver['amount'] is Map
+        ? driver['amount']['amount']
+        : driver['amount'];
+    final amount = num.tryParse('$amountValue') ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1C1C) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: isDark ? 0.18 : 0.12),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // DRIVER PHOTO — with a subtle ring
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundColor: isDark
+                      ? Colors.white10
+                      : colorScheme.primaryContainer,
+                  backgroundImage: photo != null ? NetworkImage(photo) : null,
+                  child: photo == null
+                      ? Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: GoogleFonts.syne(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            color: isDark
+                                ? Colors.white
+                                : colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // DRIVER INFO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.syne(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.bolt_rounded,
+                            size: 12,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            'OFFER',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // PRICE
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'FARE',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: isDark ? Colors.white38 : Colors.black38,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    formatFare(amount),
+                    style: GoogleFonts.inter(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Divider(
+            height: 1,
+            color: isDark
+                ? Colors.white10
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+
+          const SizedBox(height: 16),
+
+          // BUTTONS
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onReject,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    foregroundColor: isDark ? Colors.white70 : Colors.black87,
+                    side: BorderSide(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Reject',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: onAccept,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_rounded, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Accept ${formatFare(amount)}',
+                        style: GoogleFonts.syne(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ignore: constant_identifier_names
+enum PaymentMethod { CASH, TRANSFER }
+
+class DriverOffersList extends ConsumerWidget {
+  const DriverOffersList({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offers = ref.watch(driverOfferProvider);
+
+    if (offers.isEmpty) {
+      return const Center(child: Text('Waiting for driver offers...'));
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: offers.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final offer = offers[index];
+
+        return TweenAnimationBuilder<double>(
+          key: ValueKey(offer['driver']['id']),
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutBack,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value.clamp(0, 1),
+              child: Transform.translate(
+                offset: Offset(0, 30 * (1 - value)),
+                child: child,
+              ),
+            );
+          },
+          child: _OfferCard(
+            offer: offer,
+            onAccept: () {
+              ref.read(driverOfferProvider.notifier).acceptOffer(offer);
+            },
+            onReject: () {
+              ref.read(driverOfferProvider.notifier).rejectOffer(offer);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OfferCard extends StatelessWidget {
+  final dynamic offer;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  const _OfferCard({
+    required this.offer,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final driver = offer['driver'];
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage: driver['photo'] != null
+                      ? NetworkImage(driver['photo'])
+                      : null,
+                  child: driver['photo'] == null
+                      ? const Icon(Icons.person)
+                      : null,
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        driver['name'] ?? 'Unknown driver',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        '₦${driver['amount']}',
+                        style: const TextStyle(fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onReject,
+                    child: const Text('Reject'),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onAccept,
+                    child: const Text('Accept'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -7,7 +7,6 @@ class RequestRideModel {
   final String? pickupAddress;
   final String? dropoffAddress;
   final num fare;
-
   const RequestRideModel({
     required this.pickupLat,
     required this.pickupLng,

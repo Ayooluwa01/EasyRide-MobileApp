@@ -374,6 +374,7 @@ extension RequestRideLogic on _RequestRideScreenState {
 
   Future<void> _confirmRide(num offeredFare) async {
     final destination = _selectedDestination;
+    final paymentMethod = _selectedPaymentMethod;
 
     if (destination == null || _isConfirmingRide) return;
 
@@ -384,9 +385,9 @@ extension RequestRideLogic on _RequestRideScreenState {
       pickupLng: pickup.lng,
       dropoffLat: destination.lat,
       dropoffLng: destination.lng,
-      paymentMethod: 'CASH',
       pickupAddress: 'Current location',
       dropoffAddress: destination.title,
+      paymentMethod: paymentMethod?.name,
       fare: offeredFare,
     );
 
@@ -398,7 +399,10 @@ extension RequestRideLogic on _RequestRideScreenState {
       final response = await ref.read(requestRideProvider).requestRide(request);
 
       if (!mounted) return;
+      final rideId = response.data.rideId;
 
+      ref.read(driverOfferProvider.notifier).setRide(rideId);
+      // ref.read(driverOfferProvider);
       setState(() {
         _isConfirmingRide = false;
         _searchNearbyDrivers = true;
@@ -419,5 +423,78 @@ extension RequestRideLogic on _RequestRideScreenState {
         _isConfirmingRide = false;
       });
     }
+  }
+
+  Widget paymentCard({
+    required PaymentMethod method,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    final selected = _selectedPaymentMethod == method;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPaymentMethod = method;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected
+              ? colorScheme.primary.withValues(alpha: 0.08)
+              : colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? colorScheme.primary
+                : colorScheme.onSurface.withValues(alpha: 0.1),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

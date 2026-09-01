@@ -23,7 +23,9 @@ class ApiClient {
   bool _isRefreshing = false;
 
   void _initialize() {
+    // const String baseUrl = 'http://127.0.0.1:3000';
     const String baseUrl = 'http://127.0.0.1:3000';
+
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
