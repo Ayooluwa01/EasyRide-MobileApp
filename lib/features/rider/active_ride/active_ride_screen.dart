@@ -29,15 +29,10 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   // ============================================================
 
   MapboxMap? _mapboxController;
-
   PointAnnotationManager? _pointAnnotationManager;
-
   PolylineAnnotationManager? _polylineAnnotationManager;
-
   PointAnnotation? _riderMarker;
-
   PointAnnotation? _driverMarker;
-
   PolylineAnnotation? _riderDriverLine;
 
   // ============================================================
@@ -45,9 +40,7 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   // ============================================================
 
   bool _updatingMarkers = false;
-
   bool _mapReady = false;
-
   bool _disposed = false;
 
   // ============================================================
@@ -57,40 +50,29 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   @override
   void initState() {
     super.initState();
-
     ref.listenManual(activeRideProvider, (_, __) {
       _updateMarkers();
     });
-
     ref.listenManual(locationProvider, (_, __) {
       _updateMarkers();
     });
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_disposed) return;
-
       developer.log(
         'ActiveRideScreen initialized with rideId: ${widget.rideId}',
         name: 'ActiveRide',
       );
 
       final activeRide = ref.read(activeRideProvider.notifier);
-
       activeRide.setRide({'id': widget.rideId, 'rideId': widget.rideId});
-
       activeRide.joinRide(widget.rideId);
-
       await ref.read(getRideByIdProvider.notifier).fetchRide(widget.rideId);
-
       if (_disposed) return;
-
       final ride = ref.read(getRideByIdProvider).valueOrNull;
-
       if (ride == null) {
         developer.log('Ride not found', name: 'ActiveRide');
         return;
       }
-
       activeRide.setRide({
         'id': ride.id,
         'rideId': ride.id,
@@ -116,58 +98,43 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
 
   Future<void> _updateMarkers() async {
     if (_disposed) return;
-
     if (!_mapReady) {
       return;
     }
 
     final pointManager = _pointAnnotationManager;
-
     if (pointManager == null) {
       return;
     }
-
     if (_updatingMarkers) {
       return;
     }
 
     _updatingMarkers = true;
-
     try {
       final userPosition = ref.read(locationProvider).value;
-
       final socketRide = ref.read(activeRideProvider);
-
       final rideDetails = ref.read(getRideByIdProvider).valueOrNull;
-
       final socketDriverLocation = socketRide?['driverLocation'];
-
       final restDriverLocation = rideDetails?.driverLocation;
-
       final dynamic socketLatitude = socketDriverLocation?['latitude'];
-
       final dynamic socketLongitude = socketDriverLocation?['longitude'];
-
       final double? driverLatitude = socketLatitude is num
           ? socketLatitude.toDouble()
           : restDriverLocation?.latitude;
-
       final double? driverLongitude = socketLongitude is num
           ? socketLongitude.toDouble()
           : restDriverLocation?.longitude;
-
       if (userPosition != null) {
         final riderPoint = Point(
           coordinates: Position(userPosition.longitude, userPosition.latitude),
         );
-
         if (_riderMarker == null) {
           _riderMarker = await pointManager.create(
             PointAnnotationOptions(geometry: riderPoint),
           );
         } else {
           _riderMarker!.geometry = riderPoint;
-
           await pointManager.update(_riderMarker!);
         }
       }
@@ -176,14 +143,12 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
         final driverPoint = Point(
           coordinates: Position(driverLongitude, driverLatitude),
         );
-
         if (_driverMarker == null) {
           _driverMarker = await pointManager.create(
             PointAnnotationOptions(geometry: driverPoint),
           );
         } else {
           _driverMarker!.geometry = driverPoint;
-
           await pointManager.update(_driverMarker!);
         }
       }
@@ -254,53 +219,33 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
 
   Future<void> _onMapCreated(MapboxMap controller) async {
     if (_disposed) return;
-
     developer.log('Mapbox map created', name: 'ActiveRideMap');
-
     _mapboxController = controller;
-
     await controller.location.updateSettings(
       LocationComponentSettings(enabled: false),
     );
-
     if (_disposed) return;
-
     _pointAnnotationManager = await controller.annotations
         .createPointAnnotationManager();
-
     if (_disposed) return;
-
     _polylineAnnotationManager = await controller.annotations
         .createPolylineAnnotationManager();
-
     if (_disposed) return;
-
     _mapReady = true;
-
     await _updateMarkers();
-
     if (_disposed) return;
-
     final socketRide = ref.read(activeRideProvider);
-
     final rideDetails = ref.read(getRideByIdProvider).valueOrNull;
-
     final socketDriverLocation = socketRide?['driverLocation'];
-
     final restDriverLocation = rideDetails?.driverLocation;
-
     final dynamic socketLatitude = socketDriverLocation?['latitude'];
-
     final dynamic socketLongitude = socketDriverLocation?['longitude'];
-
     final double? latitude = socketLatitude is num
         ? socketLatitude.toDouble()
         : restDriverLocation?.latitude;
-
     final double? longitude = socketLongitude is num
         ? socketLongitude.toDouble()
         : restDriverLocation?.longitude;
-
     if (latitude != null && longitude != null) {
       await controller.easeTo(
         CameraOptions(
@@ -319,35 +264,22 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final isDark = theme.brightness == Brightness.dark;
-
     final socketRide = ref.watch(activeRideProvider);
-
     final rideDetails = ref.watch(getRideByIdProvider).valueOrNull;
-
     final userLocation = ref.watch(locationProvider);
-
     final userPosition = userLocation.value;
-
     final socketDriverLocation = socketRide?['driverLocation'];
-
     final restDriverLocation = rideDetails?.driverLocation;
-
     final dynamic socketLatitude = socketDriverLocation?['latitude'];
-
     final dynamic socketLongitude = socketDriverLocation?['longitude'];
-
     final double? latitude = socketLatitude is num
         ? socketLatitude.toDouble()
         : restDriverLocation?.latitude;
-
     final double? longitude = socketLongitude is num
         ? socketLongitude.toDouble()
         : restDriverLocation?.longitude;
-
     final status = socketRide?['status'] ?? rideDetails?.status;
-
     developer.log(
       'Driver location: '
       '$latitude, $longitude',

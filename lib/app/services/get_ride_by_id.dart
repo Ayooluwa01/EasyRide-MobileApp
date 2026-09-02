@@ -18,7 +18,7 @@ class GetRideByIdNotifier extends AsyncNotifier<GetRideByIdModel?> {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get('/rides/$rideId');
       developer.log(
-        'Response from /rides/$rideId: ${response}',
+        'Response from /rides/$rideId: $response',
         name: 'GetRideByIdNotifier',
       );
       final parsed = GetRideByIdResponse.fromJson(

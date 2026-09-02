@@ -19,7 +19,7 @@ class _AcceptOffer {
     try {
       final response = await _apiClient.post(
         '/rides/$rideId/accept-driver',
-        data: {'driverId': driverId},
+        data: {driverId: 'driverId'},
       );
       developer.log('Accept driver offer response: ${response.data}');
       return AcceptDriverOfferModel.fromJson(response.data);
