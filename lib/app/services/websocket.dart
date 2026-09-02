@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:easy_ride/core/socket/socket_events.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -103,6 +102,10 @@ class Websocket {
 
   void off(String event, [Function(dynamic)? callback]) {
     socket.off(event, callback);
+  }
+
+  void onAny(Function(String event, dynamic data) callback) {
+    socket.onAny(callback);
   }
 
   void emit(String event, [dynamic data]) {

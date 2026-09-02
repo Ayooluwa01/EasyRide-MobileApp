@@ -42,10 +42,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
 
   void setRide(Map<String, dynamic> ride) {
     state = Map<String, dynamic>.from(ride);
-    developer.log(
-      'Active ride set: ${ride['rideId'] ?? ride['id']}',
-      name: 'ActiveRide',
-    );
   }
 
   void clear() {
@@ -69,6 +65,8 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   // ============================================================
 
   void _onDriverArrived(dynamic data) {
+    developer.log('DRIVER ARRIVED: $data', name: 'ActiveRide');
+
     if (data is! Map) return;
     final incoming = Map<String, dynamic>.from(data);
     if (!_belongsToCurrentRide(incoming)) {
@@ -102,7 +100,11 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
     if (!_belongsToCurrentRide(incoming)) {
       return;
     }
-    state = {...?state, 'destinationReached': true};
+    state = {
+      ...?state,
+      'destinationReached': true,
+      'status': 'DESTINATION_REACHED',
+    };
     developer.log('DESTINATION REACHED', name: 'ActiveRide');
   }
 
@@ -139,14 +141,13 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   // ============================================================
   // DRIVER LOCATION
   // ============================================================
-
   void _onDriverLocation(dynamic data) {
     if (data is! Map) return;
     final incoming = Map<String, dynamic>.from(data);
-    developer.log('Driver location update: $incoming');
     if (!_belongsToCurrentRide(incoming)) {
       return;
     }
+
     state = {
       ...?state,
       'driverLocation': {

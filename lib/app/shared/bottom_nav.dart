@@ -20,15 +20,15 @@ class _BottomNavState extends State<BottomNav> {
 
   final List<Widget> _screens = const [
     RiderHomeScreen(),
-    RiderChatListScreen(),
     RiderTripScreen(),
+    RiderChatListScreen(),
     RiderProfileScreen(),
   ];
 
   final List<_NavItemData> _items = const [
     _NavItemData(icon: Icons.home_rounded, label: 'Home'),
-    _NavItemData(icon: Icons.chat_bubble_rounded, label: 'Chats'),
     _NavItemData(icon: Icons.history_rounded, label: 'Trips'),
+    _NavItemData(icon: Icons.chat_bubble_rounded, label: 'Chats'),
     _NavItemData(icon: Icons.person_rounded, label: 'Profile'),
   ];
 

@@ -13,4 +13,5 @@ class RouteNames {
   static const ridersecurity = '/ridersecurity';
   static const requestride = '/requestride';
   static const activeride = '/activeride';
+  static const chatscreen = '/rider/chats';
 }

@@ -340,11 +340,10 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
       final activeRide = await ref
           .read(checkActiveRideProvider)
           .checkActiveRideForRider();
-      developer.log('Active ride check result: $activeRide');
       if (!mounted) return;
 
-      if (activeRide != null) {
-        context.go(RouteNames.activeride, extra: activeRide.id);
+      if (activeRide?.id != null) {
+        context.go(RouteNames.activeride, extra: activeRide?.id);
       }
     } catch (e) {
       debugPrint('Failed to check active ride: $e');

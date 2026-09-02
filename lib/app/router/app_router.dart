@@ -145,12 +145,11 @@ final appRouter = GoRouter(
     ),
 
     GoRoute(
-      path: '/rider/chats/:chatId',
+      path: RouteNames.chatscreen,
+      name: 'chatscreen',
       builder: (context, state) {
-        final chatId = state.pathParameters['chatId']!;
-        final chatObject = state.extra as ChatPreview;
-
-        return ChatScreen(chatId: chatId, chat: chatObject);
+        final rideId = state.extra as String;
+        return ChatScreen(rideId: rideId);
       },
     ),
     GoRoute(
@@ -178,8 +177,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/activeride',
       builder: (context, state) {
-        developer.log('ActiveRide route extra: ${state.extra}');
-
         final rideId = state.extra as String?;
 
         if (rideId == null || rideId.isEmpty) {

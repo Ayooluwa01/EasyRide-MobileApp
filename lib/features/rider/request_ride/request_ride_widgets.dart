@@ -761,7 +761,7 @@ class AvailableDrivers extends ConsumerWidget {
                           if (response.success) {
                             context.go(
                               RouteNames.activeride,
-                              extra: {'rideId': response.rideId},
+                              extra: response.rideId,
                             );
                           }
                         } catch (e) {
