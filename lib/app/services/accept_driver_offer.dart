@@ -17,20 +17,24 @@ class _AcceptOffer {
     String driverId,
   ) async {
     try {
+      developer.log('RIDE ID: $rideId');
+      developer.log('DRIVER ID: $driverId');
       final response = await _apiClient.post(
         '/rides/$rideId/accept-driver',
-        data: {driverId: 'driverId'},
+        data: {'driverId': driverId},
       );
       developer.log('Accept driver offer response: ${response.data}');
       return AcceptDriverOfferModel.fromJson(response.data);
     } on DioException catch (e) {
-      // final serverMessage = e.response?.data is Map
-      //     ? (e.response!.data as Map)['message']
-      //     : e.response?.data;
+      final serverMessage = e.response?.data is Map
+          ? (e.response!.data as Map)['message']
+          : e.response?.data;
+
       developer.log(
         'Error accepting driver offer '
-        '[${e.response?.statusCode}]',
+        '[${e.response?.statusCode}]: $serverMessage',
       );
+
       rethrow;
     } catch (e) {
       developer.log('Error accepting driver offer: $e');

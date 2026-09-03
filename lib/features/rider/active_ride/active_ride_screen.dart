@@ -28,7 +28,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   // MAPBOX
   // ============================================================
 
-  MapboxMap? _mapboxController;
   PointAnnotationManager? _pointAnnotationManager;
   PolylineAnnotationManager? _polylineAnnotationManager;
   PointAnnotation? _riderMarker;
@@ -43,25 +42,17 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   bool _mapReady = false;
   bool _disposed = false;
 
-  // ============================================================
-  // INIT
-  // ============================================================
-
   @override
   void initState() {
     super.initState();
-    ref.listenManual(activeRideProvider, (_, __) {
+    ref.listenManual(activeRideProvider, (_, _) {
       _updateMarkers();
     });
-    ref.listenManual(locationProvider, (_, __) {
+    ref.listenManual(locationProvider, (_, _) {
       _updateMarkers();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_disposed) return;
-      developer.log(
-        'ActiveRideScreen initialized with rideId: ${widget.rideId}',
-        name: 'ActiveRide',
-      );
 
       final activeRide = ref.read(activeRideProvider.notifier);
       activeRide.setRide({'id': widget.rideId, 'rideId': widget.rideId});
@@ -220,7 +211,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   Future<void> _onMapCreated(MapboxMap controller) async {
     if (_disposed) return;
     developer.log('Mapbox map created', name: 'ActiveRideMap');
-    _mapboxController = controller;
     await controller.location.updateSettings(
       LocationComponentSettings(enabled: false),
     );
@@ -391,7 +381,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
     _riderMarker = null;
     _driverMarker = null;
     _riderDriverLine = null;
-    _mapboxController = null;
     super.dispose();
   }
 }

@@ -64,7 +64,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent + 40,
+            _scrollController.position.maxScrollExtent + 4,
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
           );
@@ -148,6 +148,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               controller: _textController,
               hasText: _hasText,
               onSend: _sendMessage,
+              rideStatus: rideDetails?.status,
             ),
           ],
         ),
@@ -364,6 +365,7 @@ class _ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool hasText;
   final VoidCallback onSend;
+  final String? rideStatus;
 
   const _ChatInputBar({
     required this.theme,
@@ -371,7 +373,11 @@ class _ChatInputBar extends StatelessWidget {
     required this.controller,
     required this.hasText,
     required this.onSend,
+    required this.rideStatus,
   });
+
+  bool get _isChatLocked =>
+      rideStatus == 'COMPLETED' || rideStatus == 'CANCELLED';
 
   @override
   Widget build(BuildContext context) {
@@ -393,63 +399,120 @@ class _ChatInputBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 5,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-                style: TextStyle(fontSize: 15, color: colorScheme.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Type a message…',
-                  hintStyle: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+        child: _isChatLocked
+            ? _ChatLockedNotice(theme: theme, rideStatus: rideStatus)
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: 5,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => onSend(),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Type a message…',
+                        hintStyle: TextStyle(
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.onSurface.withValues(
+                          alpha: 0.05,
+                        ),
+                      ),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Material(
-              color: hasText
-                  ? colorScheme.primary
-                  : colorScheme.onSurface.withValues(alpha: 0.08),
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: hasText ? onSend : null,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(
-                    Icons.arrow_upward_rounded,
-                    size: 20,
+                  const SizedBox(width: 8),
+                  Material(
                     color: hasText
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurface.withValues(alpha: 0.35),
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.08),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: hasText ? onSend : null,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 20,
+                          color: hasText
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
 
+// ==================================================================
+// CHAT LOCKED NOTICE
+// ==================================================================
+
+class _ChatLockedNotice extends StatelessWidget {
+  final ThemeData theme;
+  final String? rideStatus;
+
+  const _ChatLockedNotice({required this.theme, required this.rideStatus});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = theme.colorScheme;
+
+    final message = rideStatus == 'CANCELLED'
+        ? 'This ride was cancelled. You can no longer send messages.'
+        : 'This ride has been completed. You can no longer send messages.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 16,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 // ==================================================================
 // EMPTY STATE
 // ==================================================================

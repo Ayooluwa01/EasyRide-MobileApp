@@ -290,7 +290,6 @@
 // }
 
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/check_active_ride.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
@@ -318,9 +317,6 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   // Search State
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
-  final List<Map<String, dynamic>> _searchResults = [];
-  final bool _isSearching = false;
-  final int _searchRequestId = 0;
 
   @override
   void initState() {

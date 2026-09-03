@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/models/ride_message_model.dart';
@@ -32,8 +31,7 @@ class RideChat extends AsyncNotifier<List<RideMessageModel>> {
     final apiClient = ref.read(apiClientProvider);
 
     try {
-      final response = await apiClient.get('/rides/$rideId/messages');
-      developer.log('📥 GET CHAT RESPONSE: ${response.data}', name: 'RideChat');
+      final response = await apiClient.get('/chat/$rideId');
       final responseData = response.data as Map<String, dynamic>;
       final data = responseData['data'] as Map<String, dynamic>;
       final messagesJson = data['messages'] as List<dynamic>;
@@ -63,30 +61,23 @@ class RideChat extends AsyncNotifier<List<RideMessageModel>> {
     required String content,
   }) async {
     final apiClient = ref.read(apiClientProvider);
-
     try {
       final trimmedContent = content.trim();
       if (trimmedContent.isEmpty) {
         throw Exception('Message cannot be empty');
       }
-
       final response = await apiClient.post(
-        '/rides/$rideId/messages',
+        '/chat/$rideId',
         data: {'content': trimmedContent},
       );
 
       final responseData = response.data as Map<String, dynamic>;
-
       final messageJson = responseData['data'] as Map<String, dynamic>;
-
       final message = RideMessageModel.fromJson(messageJson);
-
       final currentMessages = state.valueOrNull ?? [];
-
       final alreadyExists = currentMessages.any(
         (item) => item.id == message.id,
       );
-
       if (!alreadyExists) {
         state = AsyncData([...currentMessages, message]);
       }
@@ -139,7 +130,7 @@ class RideChat extends AsyncNotifier<List<RideMessageModel>> {
       // ----------------------------------------------------------
 
       state = AsyncData([...currentMessages, message]);
-    } catch (e, stackTrace) {}
+    } catch (e) {}
   }
 
   // ============================================================

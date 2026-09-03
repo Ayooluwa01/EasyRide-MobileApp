@@ -387,7 +387,7 @@ extension RequestRideLogic on _RequestRideScreenState {
       dropoffLng: destination.lng,
       pickupAddress: 'Current location',
       dropoffAddress: destination.title,
-      paymentMethod: paymentMethod?.name,
+      paymentMethod: paymentMethod.name,
       fare: offeredFare,
     );
 

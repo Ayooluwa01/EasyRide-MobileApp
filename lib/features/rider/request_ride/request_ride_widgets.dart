@@ -2,7 +2,6 @@ import 'dart:developer' as developer;
 
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/shared/number_formatter.dart';
-import 'package:easy_ride/app/theme/app_text_styling.dart';
 import 'package:easy_ride/core/controllers/driver_offers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -601,8 +600,8 @@ class AvailableDrivers extends ConsumerWidget {
     required this.isDark,
     required this.colorScheme,
     required this.drivers,
-    int? count,
-  }) : _count = count;
+    this._count,
+  });
 
   final bool isDark;
   final ColorScheme colorScheme;
@@ -727,7 +726,7 @@ class AvailableDrivers extends ConsumerWidget {
                 physics: const ClampingScrollPhysics(),
                 itemCount: offers.length,
                 padding: EdgeInsets.zero,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
                 itemBuilder: (context, index) {
                   final offer = offers[index];
 
@@ -837,16 +836,6 @@ class AvailableDrivers extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _formatDistance(double? meters) {
-    if (meters == null) return 'Nearby';
-
-    if (meters < 1000) {
-      return '${meters.round()} m away';
-    }
-
-    return '${(meters / 1000).toStringAsFixed(1)} km away';
   }
 }
 

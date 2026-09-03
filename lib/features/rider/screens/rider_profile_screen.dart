@@ -185,13 +185,13 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                     indent: 48,
                     color: dividerColor,
                   ),
-                  OptionTile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: "Payment Methods",
-                    onTap: () {
-                      context.push(RouteNames.riderpaymentinformation);
-                    },
-                  ),
+                  // OptionTile(
+                  //   icon: Icons.account_balance_wallet_outlined,
+                  //   label: "Payment Methods",
+                  //   onTap: () {
+                  //     context.push(RouteNames.riderpaymentinformation);
+                  //   },
+                  // ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -295,7 +295,7 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                   ),
                   OptionTile(
                     icon: Icons.info_outline_rounded,
-                    label: "About GidiRide",
+                    label: "About EasyRide",
                     onTap: () {},
                   ),
                 ],
