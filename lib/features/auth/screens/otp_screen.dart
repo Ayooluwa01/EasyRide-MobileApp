@@ -267,6 +267,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                       position: _otpSlideAnimation,
                                       child: Center(
                                         child: Pinput(
+                                          keyboardType: TextInputType.text,
                                           controller: _pinController,
                                           length: 4,
                                           hapticFeedbackType:

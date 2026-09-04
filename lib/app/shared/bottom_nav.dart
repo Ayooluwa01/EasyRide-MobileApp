@@ -1,3 +1,4 @@
+import 'package:easy_ride/features/driver/driver_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_chat_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
 import 'package:easy_ride/features/rider/screens/rider_profile_screen.dart';
@@ -19,7 +20,8 @@ class _BottomNavState extends State<BottomNav> {
   static const Color inactiveGrey = Color(0xFF9CA3AF);
 
   final List<Widget> _screens = const [
-    RiderHomeScreen(),
+    // RiderHomeScreen(),
+    DriverHomeScreen(),
     RiderTripScreen(),
     RiderChatListScreen(),
     RiderProfileScreen(),
