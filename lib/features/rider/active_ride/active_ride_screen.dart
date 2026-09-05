@@ -1,18 +1,24 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:easy_ride/app/models/get_ride_model.dart';
+import 'package:easy_ride/app/models/mapbox_location_model.dart';
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/get_ride_by_id.dart';
+import 'package:easy_ride/app/services/route_service.dart';
+import 'package:easy_ride/app/shared/icon_to_bipmap.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:easy_ride/app/theme/app_theme.dart';
 import 'package:easy_ride/core/controllers/active_ride.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ActiveRideScreen extends ConsumerStatefulWidget {
   final String rideId;
@@ -25,31 +31,52 @@ class ActiveRideScreen extends ConsumerStatefulWidget {
 
 class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   // ============================================================
-  // MAPBOX
+  // GOOGLE MAPS
   // ============================================================
 
-  PointAnnotationManager? _pointAnnotationManager;
-  PolylineAnnotationManager? _polylineAnnotationManager;
-  PointAnnotation? _riderMarker;
-  PointAnnotation? _driverMarker;
-  PolylineAnnotation? _riderDriverLine;
+  GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  Set<Polyline> _routePolylines = {};
+  BitmapDescriptor? riderIcon;
+  BitmapDescriptor? driverIcon;
+
+  // ============================================================
+  // ROUTE THROTTLING — avoid re-calling Directions on every tiny
+  // driver GPS jitter; only refetch when the driver has moved a
+  // meaningful distance, debounced.
+  // ============================================================
+
+  ({double lat, double lng})? _lastRoutedDriverPosition;
+  Timer? _routeDebounce;
+  bool _fetchingRoute = false;
 
   // ============================================================
   // UPDATE CONTROL
   // ============================================================
 
-  bool _updatingMarkers = false;
   bool _mapReady = false;
   bool _disposed = false;
+  bool _hasCenteredOnDriver = false;
 
   @override
   void initState() {
     super.initState();
     ref.listenManual(activeRideProvider, (_, _) {
-      _updateMarkers();
+      _updateMarkersAndRoute();
     });
     ref.listenManual(locationProvider, (_, _) {
-      _updateMarkers();
+      _updateMarkersAndRoute();
+    });
+
+    // listen to ride in progress status from websocket or if the inital rest api status response is in_Progress
+    ref.listenManual(activeRideProvider, (previous, next) {
+      final status = next?['status'];
+
+      if (status == 'IN_PROGRESS') {
+        print('RIDE IS NOW IN PROGRESS');
+
+        _updateMarkersAndRoute();
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_disposed) return;
@@ -79,172 +106,248 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
             : null,
       });
 
-      developer.log('Initial ride loaded: ${ride.id}', name: 'ActiveRide');
+      _loadRiderIcon();
     });
   }
 
+  Future<void> _loadRiderIcon() async {
+    final icon = await iconToBitmapDescriptor(
+      Icons.person_pin_circle,
+      size: 50,
+      color: Color.from(alpha: 1, red: 0.094, green: 0.886, blue: 0.471),
+    );
+    final taxiIcon = await iconToBitmapDescriptor(
+      Icons.local_taxi,
+      size: 30,
+      color: Colors.black38,
+    );
+
+    if (mounted) {
+      setState(() {
+        riderIcon = icon;
+        driverIcon = taxiIcon;
+      });
+
+      _updateMarkersAndRoute();
+    }
+  }
   // ============================================================
-  // UPDATE MARKERS
+  // UPDATE MARKERS + ROUTE
   // ============================================================
 
-  Future<void> _updateMarkers() async {
-    if (_disposed) return;
-    if (!_mapReady) {
+  Future<void> _updateMarkersAndRoute() async {
+    if (_disposed || !_mapReady) return;
+
+    final userPosition = ref.read(locationProvider).value;
+    final socketRide = ref.read(activeRideProvider);
+    final rideDetails = ref.read(getRideByIdProvider).valueOrNull;
+
+    final socketDriverLocation = socketRide?['driverLocation'];
+    final restDriverLocation = rideDetails?.driverLocation;
+
+    final dynamic socketLatitude = socketDriverLocation?['latitude'];
+
+    final dynamic socketLongitude = socketDriverLocation?['longitude'];
+
+    final double? driverLatitude = socketLatitude is num
+        ? socketLatitude.toDouble()
+        : restDriverLocation?.latitude;
+
+    final double? driverLongitude = socketLongitude is num
+        ? socketLongitude.toDouble()
+        : restDriverLocation?.longitude;
+
+    final updatedMarkers = <Marker>{};
+
+    // ============================================================
+    // RIDER MARKER
+    // ============================================================
+
+    if (userPosition != null) {
+      updatedMarkers.add(
+        Marker(
+          markerId: const MarkerId('rider'),
+          position: LatLng(userPosition.latitude, userPosition.longitude),
+          icon:
+              riderIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          anchor: const Offset(0.5, 0.5),
+          zIndex: 2,
+        ),
+      );
+    }
+
+    // ============================================================
+    // DRIVER MARKER
+    // ============================================================
+
+    if (driverLatitude != null && driverLongitude != null) {
+      updatedMarkers.add(
+        Marker(
+          markerId: const MarkerId('driver'),
+          position: LatLng(driverLatitude, driverLongitude),
+          icon:
+              driverIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          anchor: const Offset(0.5, 0.5),
+          zIndex: 2,
+        ),
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _markers
+          ..clear()
+          ..addAll(updatedMarkers);
+      });
+    }
+
+    // ============================================================
+    // ROUTE
+    // ============================================================
+
+    if (driverLatitude == null || driverLongitude == null) {
       return;
     }
 
-    final pointManager = _pointAnnotationManager;
-    if (pointManager == null) {
-      return;
+    final status = socketRide?['status'] ?? rideDetails?.status;
+
+    double? routeDestinationLat;
+    double? routeDestinationLng;
+
+    if (status == 'IN_PROGRESS') {
+      // Driver → Destination
+      routeDestinationLat = rideDetails?.dropoffLocation!.latitude;
+      routeDestinationLng = rideDetails?.dropoffLocation!.longitude;
+    } else {
+      // Driver → Rider / Pickup
+
+      routeDestinationLat = userPosition?.latitude;
+      routeDestinationLng = userPosition?.longitude;
     }
-    if (_updatingMarkers) {
+
+    if (routeDestinationLat == null || routeDestinationLng == null) {
       return;
     }
 
-    _updatingMarkers = true;
+    _maybeRefetchRoute(
+      riderLat: routeDestinationLat,
+      riderLng: routeDestinationLng,
+      driverLat: driverLatitude,
+      driverLng: driverLongitude,
+    );
+  }
+  // ============================================================
+  // ROAD ROUTE — throttled Directions call, not a straight line
+  // ============================================================
+
+  void _maybeRefetchRoute({
+    required double riderLat,
+    required double riderLng,
+    required double driverLat,
+    required double driverLng,
+  }) {
+    final last = _lastRoutedDriverPosition;
+    if (last != null) {
+      final movedMeters = _distanceMeters(
+        last.lat,
+        last.lng,
+        driverLat,
+        driverLng,
+      );
+      // Skip re-fetching for small GPS jitter — only refresh the route
+      // once the driver has moved far enough to meaningfully change it.
+      if (movedMeters < 70) return;
+    }
+
+    _routeDebounce?.cancel();
+    _routeDebounce = Timer(const Duration(seconds: 5), () {
+      _fetchRoadRoute(
+        riderLat: riderLat,
+        riderLng: riderLng,
+        driverLat: driverLat,
+        driverLng: driverLng,
+      );
+    });
+  }
+
+  Future<void> _fetchRoadRoute({
+    required double riderLat,
+    required double riderLng,
+    required double driverLat,
+    required double driverLng,
+  }) async {
+    if (_fetchingRoute || _disposed) return;
+    _fetchingRoute = true;
+
     try {
-      final userPosition = ref.read(locationProvider).value;
-      final socketRide = ref.read(activeRideProvider);
-      final rideDetails = ref.read(getRideByIdProvider).valueOrNull;
-      final socketDriverLocation = socketRide?['driverLocation'];
-      final restDriverLocation = rideDetails?.driverLocation;
-      final dynamic socketLatitude = socketDriverLocation?['latitude'];
-      final dynamic socketLongitude = socketDriverLocation?['longitude'];
-      final double? driverLatitude = socketLatitude is num
-          ? socketLatitude.toDouble()
-          : restDriverLocation?.latitude;
-      final double? driverLongitude = socketLongitude is num
-          ? socketLongitude.toDouble()
-          : restDriverLocation?.longitude;
-      if (userPosition != null) {
-        final riderPoint = Point(
-          coordinates: Position(userPosition.longitude, userPosition.latitude),
-        );
-        if (_riderMarker == null) {
-          _riderMarker = await pointManager.create(
-            PointAnnotationOptions(geometry: riderPoint),
-          );
-        } else {
-          _riderMarker!.geometry = riderPoint;
-          await pointManager.update(_riderMarker!);
-        }
-      }
+      final request = GetRouteRequest(
+        originLng: driverLng,
+        originLat: driverLat,
+        destLng: riderLng,
+        destLat: riderLat,
+      );
 
-      if (driverLatitude != null && driverLongitude != null) {
-        final driverPoint = Point(
-          coordinates: Position(driverLongitude, driverLatitude),
-        );
-        if (_driverMarker == null) {
-          _driverMarker = await pointManager.create(
-            PointAnnotationOptions(geometry: driverPoint),
-          );
-        } else {
-          _driverMarker!.geometry = driverPoint;
-          await pointManager.update(_driverMarker!);
-        }
-      }
+      final response = await ref.read(routeServiceProvider).getRoute(request);
+      final route = response.data;
 
-      if (userPosition != null &&
-          driverLatitude != null &&
-          driverLongitude != null) {
-        await _updateRoute(
-          riderLatitude: userPosition.latitude,
-          riderLongitude: userPosition.longitude,
-          driverLatitude: driverLatitude,
-          driverLongitude: driverLongitude,
-        );
-      }
+      final decoded = PolylinePoints.decodePolyline(route.polyline);
+      final points = decoded
+          .map((p) => LatLng(p.latitude, p.longitude))
+          .toList(growable: false);
+
+      if (!mounted) return;
+      setState(() {
+        _routePolylines = {
+          Polyline(
+            polylineId: const PolylineId('driver-rider-route'),
+            points: points,
+            color: Colors.blue,
+            width: 5,
+            jointType: JointType.round,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        };
+      });
+
+      _lastRoutedDriverPosition = (lat: driverLat, lng: driverLng);
     } catch (error, stackTrace) {
       developer.log(
-        'Failed to update Mapbox markers',
+        'Failed to fetch road route',
         name: 'ActiveRideMap',
         error: error,
         stackTrace: stackTrace,
       );
     } finally {
-      _updatingMarkers = false;
+      _fetchingRoute = false;
     }
   }
 
-  // ============================================================
-  // UPDATE ROUTE
-  // ============================================================
-
-  Future<void> _updateRoute({
-    required double riderLatitude,
-    required double riderLongitude,
-    required double driverLatitude,
-    required double driverLongitude,
-  }) async {
-    final manager = _polylineAnnotationManager;
-
-    if (manager == null) {
-      return;
-    }
-
-    final routeCoordinates = [
-      Position(riderLongitude, riderLatitude),
-      Position(driverLongitude, driverLatitude),
-    ];
-
-    final lineString = LineString(coordinates: routeCoordinates);
-
-    if (_riderDriverLine == null) {
-      _riderDriverLine = await manager.create(
-        PolylineAnnotationOptions(
-          geometry: lineString,
-          lineWidth: 5.0,
-          lineColor: Colors.blue.toARGB32(),
-        ),
-      );
-    } else {
-      _riderDriverLine!.geometry = lineString;
-
-      await manager.update(_riderDriverLine!);
-    }
+  double _distanceMeters(double lat1, double lng1, double lat2, double lng2) {
+    const earthRadius = 6371000.0;
+    final dLat = (lat2 - lat1) * (math.pi / 180);
+    final dLng = (lng2 - lng1) * (math.pi / 180);
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * (math.pi / 180)) *
+            math.cos(lat2 * (math.pi / 180)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
   }
 
   // ============================================================
   // MAP CREATED
   // ============================================================
 
-  Future<void> _onMapCreated(MapboxMap controller) async {
+  Future<void> _onMapCreated(GoogleMapController controller) async {
     if (_disposed) return;
-    developer.log('Mapbox map created', name: 'ActiveRideMap');
-    await controller.location.updateSettings(
-      LocationComponentSettings(enabled: false),
-    );
-    if (_disposed) return;
-    _pointAnnotationManager = await controller.annotations
-        .createPointAnnotationManager();
-    if (_disposed) return;
-    _polylineAnnotationManager = await controller.annotations
-        .createPolylineAnnotationManager();
-    if (_disposed) return;
+    _mapController = controller;
     _mapReady = true;
-    await _updateMarkers();
-    if (_disposed) return;
-    final socketRide = ref.read(activeRideProvider);
-    final rideDetails = ref.read(getRideByIdProvider).valueOrNull;
-    final socketDriverLocation = socketRide?['driverLocation'];
-    final restDriverLocation = rideDetails?.driverLocation;
-    final dynamic socketLatitude = socketDriverLocation?['latitude'];
-    final dynamic socketLongitude = socketDriverLocation?['longitude'];
-    final double? latitude = socketLatitude is num
-        ? socketLatitude.toDouble()
-        : restDriverLocation?.latitude;
-    final double? longitude = socketLongitude is num
-        ? socketLongitude.toDouble()
-        : restDriverLocation?.longitude;
-    if (latitude != null && longitude != null) {
-      await controller.easeTo(
-        CameraOptions(
-          center: Point(coordinates: Position(longitude, latitude)),
-          zoom: 14.0,
-        ),
-        MapAnimationOptions(duration: 800),
-      );
-    }
+    await _updateMarkersAndRoute();
   }
 
   // ============================================================
@@ -254,7 +357,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final socketRide = ref.watch(activeRideProvider);
     final rideDetails = ref.watch(getRideByIdProvider).valueOrNull;
     final userLocation = ref.watch(locationProvider);
@@ -270,25 +372,24 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
         ? socketLongitude.toDouble()
         : restDriverLocation?.longitude;
     final status = socketRide?['status'] ?? rideDetails?.status;
-    developer.log(
-      'Driver location: '
-      '$latitude, $longitude',
-      name: 'ActiveRide',
-    );
 
-    developer.log(
-      'User location: '
-      '${userPosition?.latitude}, '
-      '${userPosition?.longitude}',
-      name: 'ActiveRide',
-    );
-
+    // listen to when ride has started/in-progress or if the rest api is ride status is in-progres
     return Scaffold(
       body: Stack(
         children: [
-          MapWidget(
+          GoogleMap(
             key: const ValueKey('active_ride_map'),
-            styleUri: isDark ? MapboxStyles.DARK : MapboxStyles.MAPBOX_STREETS,
+            initialCameraPosition: CameraPosition(
+              target: LatLng(
+                userPosition?.latitude ?? 6.5244,
+                userPosition?.longitude ?? 3.3792,
+              ),
+              zoom: 14.0,
+            ),
+            markers: _markers,
+            polylines: _routePolylines,
+            myLocationEnabled: false,
+            myLocationButtonEnabled: false,
             onMapCreated: _onMapCreated,
           ),
 
@@ -306,13 +407,15 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF161616) : Colors.white,
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFF161616)
+                    : Colors.white,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isDark
+                    color: theme.brightness == Brightness.dark
                         ? Colors.black.withValues(alpha: 0.5)
                         : Colors.black.withValues(alpha: 0.15),
                     blurRadius: 24,
@@ -323,7 +426,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Drag handle
                   Container(
                     width: 40,
                     height: 4,
@@ -374,19 +476,14 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
   void dispose() {
     _disposed = true;
     _mapReady = false;
-    _pointAnnotationManager?.deleteAll();
-    _polylineAnnotationManager?.deleteAll();
-    _pointAnnotationManager = null;
-    _polylineAnnotationManager = null;
-    _riderMarker = null;
-    _driverMarker = null;
-    _riderDriverLine = null;
+    _routeDebounce?.cancel();
+    _mapController = null;
     super.dispose();
   }
 }
 
 // ==================================================================
-// SHARED HELPERS
+// SHARED HELPERS (unchanged — no Mapbox dependency)
 // ==================================================================
 
 String _formatNaira(double? amount) {
@@ -571,9 +668,6 @@ Widget _DriverOnTheWay({
 
   return Column(
     children: [
-      // ==========================================================
-      // STATUS + ETA
-      // ==========================================================
       Row(
         children: [
           _StatusPill(
@@ -582,22 +676,11 @@ Widget _DriverOnTheWay({
             label: 'Driver on the way',
           ),
           const Spacer(),
-          // Text(
-          //   '3 min', // No ETA field on the ride model yet.
-          //   style: TextStyle(
-          //     fontSize: 15,
-          //     fontWeight: FontWeight.w800,
-          //     color: colorScheme.primary,
-          //   ),
-          // ),
         ],
       ),
 
       const SizedBox(height: 18),
 
-      // ==========================================================
-      // DRIVER CARD
-      // ==========================================================
       Row(
         children: [
           _AvatarWithDot(
@@ -688,9 +771,6 @@ Widget _DriverOnTheWay({
 
       _SoftDivider(theme),
 
-      // ==========================================================
-      // PAYMENT METHOD + AMOUNT
-      // ==========================================================
       Row(
         children: [
           Icon(
@@ -721,9 +801,6 @@ Widget _DriverOnTheWay({
 
       const SizedBox(height: 20),
 
-      // ==========================================================
-      // CANCEL RIDE
-      // ==========================================================
       SizedBox(
         width: double.infinity,
         child: OutlinedButton(
@@ -901,15 +978,8 @@ Widget _RideInProgress({
                 ),
               ],
             ),
-
-          // Icon(
-          //   _paymentMethodIcon(rideDetails?.paymentMethod),
-          //   size: 18,
-          //   color: colorScheme.primary,
-          // ),
           const SizedBox(width: 8),
           Text(
-            // _paymentMethodLabel(rideDetails?.paymentMethod),
             "Total",
             style: TextStyle(
               fontSize: 14,

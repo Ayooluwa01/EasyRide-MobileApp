@@ -22,6 +22,8 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   bool? _currentMapStyleIsDark;
   static const double _lagosLat = 6.5244;
   static const double _lagosLng = 3.3792;
+  final Set<Marker> _markers = {};
+  BitmapDescriptor? carIcon;
 
   // Search State
   final TextEditingController _searchController = TextEditingController();

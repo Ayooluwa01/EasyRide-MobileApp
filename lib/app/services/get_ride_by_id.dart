@@ -17,16 +17,8 @@ class GetRideByIdNotifier extends AsyncNotifier<GetRideByIdModel?> {
     state = await AsyncValue.guard(() async {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get('/rides/$rideId');
-      developer.log(
-        'Response from /rides/$rideId: $response',
-        name: 'GetRideByIdNotifier',
-      );
       final parsed = GetRideByIdResponse.fromJson(
         response.data as Map<String, dynamic>,
-      );
-      developer.log(
-        'Fetched ride: ${parsed.data}',
-        name: 'GetRideByIdNotifier',
       );
       return parsed.data;
     });
