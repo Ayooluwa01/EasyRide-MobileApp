@@ -1,5 +1,6 @@
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/option_tile.dart';
@@ -9,19 +10,47 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class RiderProfileScreen extends ConsumerStatefulWidget {
-  const RiderProfileScreen({super.key});
+class DriverProfileScreen extends ConsumerStatefulWidget {
+  const DriverProfileScreen({super.key});
 
   @override
-  ConsumerState<RiderProfileScreen> createState() => _RiderProfileScreenState();
+  ConsumerState<DriverProfileScreen> createState() =>
+      _DriverProfileScreenState();
 }
 
-class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
+class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
   bool _biometricsEnabled = false;
+
+  // TODO: replace with a real provider watching the driver's wallet balance
+  num _walletBalance = 12500;
+
+  Future<void> _openTopUpSheet() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final result = await showModalBottomSheet<num>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          _TopUpSheet(colorScheme: colorScheme, isDark: isDark),
+    );
+
+    if (result != null && result > 0) {
+      // TODO: call your top-up API here, then refresh the real balance
+      setState(() => _walletBalance += result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final loginState = ref.watch(currentUserProvider);
+    final user = loginState.value;
     final theme = Theme.of(context);
+    final themeMode = ref.watch(themeProvider);
+
+    final isDarkMode = themeMode == ThemeMode.dark;
+
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final syneBaseStyle = GoogleFonts.syne(
@@ -29,28 +58,20 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
       height: 1.2,
       fontWeight: FontWeight.w700,
     );
-
-    final themeMode = ref.watch(themeProvider);
-    final isDarkMode = themeMode == ThemeMode.dark;
-    final loginState = ref.watch(currentUserProvider);
-    final user = loginState.value;
     final dividerColor = colorScheme.onSurface.withValues(alpha: 0.08);
     final mutedTextColor = colorScheme.onSurface.withValues(alpha: 0.6);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        top: true,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Top Bar
               Row(children: [const SizedBox(width: 30)]),
               const SizedBox(height: 34),
 
-              // Profile Header Section
               Align(
                 alignment: AlignmentGeometry.center,
                 child: Column(
@@ -164,10 +185,23 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
+
+              // ==========================================================
+              // WALLET BALANCE
+              // ==========================================================
+              _WalletCard(
+                balance: _walletBalance,
+                colorScheme: colorScheme,
+                isDark: isDark,
+                onTopUp: _openTopUpSheet,
+              ),
+
+              const SizedBox(height: 24),
 
               // ACCOUNT SECTION
               _SectionHeader(title: "ACCOUNT", color: mutedTextColor),
+
               _SettingsGroupCard(
                 colorScheme: colorScheme,
                 isDark: isDark,
@@ -185,18 +219,9 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                     indent: 48,
                     color: dividerColor,
                   ),
-                  // OptionTile(
-                  //   icon: Icons.account_balance_wallet_outlined,
-                  //   label: "Payment Methods",
-                  //   onTap: () {
-                  //     context.push(RouteNames.riderpaymentinformation);
-                  //   },
-                  // ),
                 ],
               ),
               const SizedBox(height: 24),
-
-              // PREFERENCES SECTION
               _SectionHeader(title: "PREFERENCES", color: mutedTextColor),
               _SettingsGroupCard(
                 colorScheme: colorScheme,
@@ -275,8 +300,6 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // SUPPORT SECTION
               _SectionHeader(title: "SUPPORT", color: mutedTextColor),
               _SettingsGroupCard(
                 colorScheme: colorScheme,
@@ -308,7 +331,6 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
                 isDark: isDark,
                 onTap: () {},
               ),
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -317,7 +339,329 @@ class _RiderProfileScreenState extends ConsumerState<RiderProfileScreen> {
   }
 }
 
-// Section Header
+// ==================================================================
+// WALLET CARD
+// ==================================================================
+
+class _WalletCard extends StatelessWidget {
+  const _WalletCard({
+    required this.balance,
+    required this.colorScheme,
+    required this.isDark,
+    required this.onTopUp,
+  });
+
+  final num balance;
+  final ColorScheme colorScheme;
+  final bool isDark;
+  final VoidCallback onTopUp;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withValues(alpha: 0.75),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 14,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'WALLET BALANCE',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  formatFare(balance),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onTopUp,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.add_rounded,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Top up',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================================================================
+// TOP UP SHEET
+// ==================================================================
+
+class _TopUpSheet extends StatefulWidget {
+  const _TopUpSheet({required this.colorScheme, required this.isDark});
+
+  final ColorScheme colorScheme;
+  final bool isDark;
+
+  @override
+  State<_TopUpSheet> createState() => _TopUpSheetState();
+}
+
+class _TopUpSheetState extends State<_TopUpSheet> {
+  static const List<num> _quickAmounts = [1000, 2000, 5000, 10000];
+
+  final TextEditingController _amountController = TextEditingController();
+  num? _selectedQuickAmount;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _selectQuickAmount(num amount) {
+    setState(() {
+      _selectedQuickAmount = amount;
+      _amountController.text = amount.toStringAsFixed(0);
+    });
+  }
+
+  num? get _enteredAmount =>
+      num.tryParse(_amountController.text.replaceAll(',', ''));
+
+  void _confirm() {
+    final amount = _enteredAmount;
+    if (amount == null || amount <= 0) return;
+    Navigator.of(context).pop(amount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = widget.colorScheme;
+    final isDark = widget.isDark;
+    final amount = _enteredAmount;
+    final isValid = amount != null && amount > 0;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161616) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+
+            Text(
+              'Top up wallet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Choose an amount or enter a custom one',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ------------------------------------------
+            // Amount input
+            // ------------------------------------------
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: TextField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (_) => setState(() => _selectedQuickAmount = null),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  prefixText: '₦ ',
+                  prefixStyle: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                  hintText: '0',
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ------------------------------------------
+            // Quick amounts
+            // ------------------------------------------
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _quickAmounts.map((quickAmount) {
+                final isSelected = _selectedQuickAmount == quickAmount;
+                return GestureDetector(
+                  onTap: () => _selectQuickAmount(quickAmount),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary.withValues(alpha: 0.14)
+                          : colorScheme.onSurface.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : Colors.transparent,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Text(
+                      formatFare(quickAmount),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: isValid ? _confirm : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  disabledBackgroundColor: colorScheme.onSurface.withValues(
+                    alpha: 0.1,
+                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  isValid ? 'Top up ${formatFare(amount)}' : 'Enter an amount',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
   final String title;
   final Color color;
@@ -328,13 +672,16 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-          letterSpacing: 1.2,
+      child: Align(
+        alignment: AlignmentGeometry.centerLeft,
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: color,
+            letterSpacing: 1.2,
+          ),
         ),
       ),
     );
@@ -362,8 +709,6 @@ class _SettingsGroupCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              // Shadows read as noise on dark surfaces, so only cast
-              // one in light mode.
               color: isDark
                   ? Colors.transparent
                   : Colors.black.withValues(alpha: 0.02),

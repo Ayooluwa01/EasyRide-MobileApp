@@ -10,10 +10,14 @@ class Endpoints {
   static const String requestPhoneNumberChange = '/auth/phone/request-change';
   static const String verifyPhoneNumberChange = '/auth/phone/confirm-change';
   static const String getMe = '/user/me';
-  static const String getLocations = '/mapbox/locations';
-  static const String getRoute = '/mapbox/route';
+  static const String getLocations = '/google-map/suggestions';
+  static const String getPlaceDetails = '/google-map/place-details';
+  static const String getRoute = '/google-map/route';
   static const String rides = '/rides';
   static const String activeRide = '/rides/active';
+  static const String rideRequets = '/rides/requests';
+  static const String onlineStatus = '/user/me/online-status';
+  static const String reverseGeocode = '/google-map/reverse-geocode';
 }
 
 class AuthRoutes {

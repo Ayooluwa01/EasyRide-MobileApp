@@ -14,7 +14,6 @@ class RideHistory extends AsyncNotifier<List<RideHistoryModel>> {
   // Fetch user ride/trip history
   Future<void> getUserTrips() async {
     state = const AsyncLoading();
-
     state = await AsyncValue.guard(() async {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get(Endpoints.rides);

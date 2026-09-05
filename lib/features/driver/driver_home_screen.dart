@@ -1,9 +1,14 @@
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:easy_ride/app/services/driver_online_service.dart';
+import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class DriverHomeScreen extends ConsumerStatefulWidget {
   const DriverHomeScreen({super.key});
@@ -13,24 +18,32 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
-  bool _isOnline = false;
-
-  void _toggleOnline(bool value) {
-    setState(() => _isOnline = value);
-  }
+  GoogleMapController? _controller;
+  static const LatLng _target = LatLng(6.5244, 3.3792); // Lagos
 
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(currentUserProvider);
+    final user = userState.value;
+    final profile = user?.driverProfile;
+    final isOnline = profile?.isOnline ?? false;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
     final syneBaseStyle = GoogleFonts.syne(height: 1.15);
+    final userLatLng = ref.watch(userLatLngProvider);
+    final cameraTarget = userLatLng != null
+        ? LatLng(userLatLng.latitude, userLatLng.longitude)
+        : _target;
     final interBaseStyle = GoogleFonts.inter();
-
-    const driverName = 'John';
-    const driverPhotoUrl = null;
-
+    final driverPhotoUrl = profile?.driverPhotoUrl ?? user?.profilePhotoUrl;
+    ref.listen(userLatLngProvider, (previous, next) {
+      if (next != null && _controller != null) {
+        _controller!.animateCamera(
+          CameraUpdate.newLatLng(LatLng(next.latitude, next.longitude)),
+        );
+      }
+    });
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -59,7 +72,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          driverName,
+                          user?.fullName ?? '?',
                           style: syneBaseStyle.copyWith(
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
@@ -70,9 +83,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                     ),
                   ),
                   _AvatarWithStatusDot(
-                    name: driverName,
+                    name: user?.fullName ?? 'D',
                     imageUrl: driverPhotoUrl,
-                    isOnline: _isOnline,
+                    isOnline: isOnline,
                     colorScheme: colorScheme,
                     scaffoldBg: theme.scaffoldBackgroundColor,
                   ),
@@ -85,8 +98,22 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
               // ONLINE / OFFLINE  CARD
               // ==========================================================
               _OnlineStatusHero(
-                isOnline: _isOnline,
-                onToggle: _toggleOnline,
+                isOnline: isOnline,
+                onToggle: (value) async {
+                  try {
+                    await ref
+                        .read(driverOnlineServiceProvider)
+                        .toggleOnlineStatus(value);
+                  } catch (e) {
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to update online status'),
+                      ),
+                    );
+                  }
+                },
                 colorScheme: colorScheme,
                 isDark: isDark,
                 syneBaseStyle: syneBaseStyle,
@@ -157,7 +184,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
               // RIDE OFFERS
               // ==========================================================
               Text(
-                'RIDE OFFERS',
+                'YOUR LOCATTION',
                 style: interBaseStyle.copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -166,57 +193,74 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (!_isOnline)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.wifi_off_rounded,
-                          size: 42,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'You are offline',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Go online to start receiving ride requests.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+              SizedBox(
+                height: 220,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: cameraTarget,
+                      zoom: 14,
                     ),
+                    onMapCreated: (controller) {
+                      _controller = controller;
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
                   ),
                 ),
+              ),
+              // if (!isOnline)
+              //   Center(
+              //     child: Padding(
+              //       padding: const EdgeInsets.only(top: 24),
+              //       child: Column(
+              //         crossAxisAlignment: CrossAxisAlignment.center,
+              //         mainAxisAlignment: MainAxisAlignment.center,
+              //         mainAxisSize: MainAxisSize.min,
+              //         children: [
+              //           Icon(
+              //             Icons.wifi_off_rounded,
+              //             size: 42,
+              //             color: colorScheme.onSurfaceVariant,
+              //           ),
+              //           const SizedBox(height: 12),
+              //           Text(
+              //             'You are offline',
+              //             style: TextStyle(
+              //               fontSize: 17,
+              //               fontWeight: FontWeight.w600,
+              //               color: colorScheme.onSurface,
+              //             ),
+              //           ),
+              //           const SizedBox(height: 6),
+              //           Text(
+              //             'Go online to start receiving ride requests.',
+              //             textAlign: TextAlign.center,
+              //             style: TextStyle(
+              //               fontSize: 14,
+              //               color: colorScheme.onSurfaceVariant,
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
 
-              if (_isOnline)
-                _RideOffers(
-                  key: const ValueKey('ride_offer_1'),
-                  colorScheme: colorScheme,
-                  isDark: isDark,
-                  isOnline: _isOnline,
-                  fare: '5000',
-                  pickup: 'Lekki Phase 1',
-                  dropoff: 'Ajah, Lagos',
-                  etaMinutes: '3 mins',
-                  distanceKm: '6.2 km',
-                  onAccept: () {},
-                  onReject: () {},
-                ),
+              // if (isOnline)
+              //   _RideOffers(
+              //     key: const ValueKey('ride_offer_1'),
+              //     colorScheme: colorScheme,
+              //     isDark: isDark,
+              //     isOnline: isOnline,
+              //     fare: '5000',
+              //     pickup: 'Lekki Phase 1',
+              //     dropoff: 'Ajah, Lagos',
+              //     etaMinutes: '3 mins',
+              //     distanceKm: '6.2 km',
+              //     onAccept: () {},
+              //     onReject: () {},
+              //   ),
 
               // Row(
               //   children: [

@@ -1,8 +1,6 @@
-// ignore_for_file: unused_field
-
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:easy_ride/app/models/mapbox_location_model.dart';
 import 'package:easy_ride/app/models/request_ride_model.dart';
@@ -16,8 +14,9 @@ import 'package:easy_ride/features/rider/request_ride/request_ride_models.dart';
 import 'package:easy_ride/features/rider/request_ride/request_ride_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 part 'request_ride_logic.dart';
 
 class RequestRideScreen extends ConsumerStatefulWidget {
@@ -28,15 +27,14 @@ class RequestRideScreen extends ConsumerStatefulWidget {
 }
 
 class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
-  MapboxMap? _mapboxController;
-  CircleAnnotationManager? _pickupAnnotationManager;
-  CircleAnnotationManager? _destAnnotationManager;
-  CircleAnnotationManager? _driversAnnotationManager;
+  GoogleMapController? _mapController;
 
-  static const String _routeSourceId = 'route-line-source';
-  static const String _routeCasingLayerId = 'route-line-casing';
-  static const String _routeLineLayerId = 'route-line-layer';
+  final Set<Marker> _pickupMarkers = {};
+  final Set<Marker> _destMarkers = {};
+  final Set<Marker> _driverMarkers = {};
+  Set<Polyline> _routePolylines = {};
   bool _hasRouteLayer = false;
+
   bool _searchNearbyDrivers = false;
   final TextEditingController _destinationController = TextEditingController();
   final FocusNode _destinationFocusNode = FocusNode();
@@ -44,14 +42,18 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   int _searchRequestId = 0;
   List<Map<String, dynamic>> _suggestions = [];
   bool _isSearching = false;
+
   RideDestination? _selectedDestination;
   RouteInfo? _routeInfo;
   bool _isRoutingLoading = false;
   bool _isConfirmingRide = false;
   String? _rideId;
   int _nearbyDriversCount = 0;
-  final Map<String, CircleAnnotation> _driverAnnotations = {};
+  final Map<String, Marker> _driverAnnotations = {};
   PaymentMethod _selectedPaymentMethod = PaymentMethod.CASH;
+  String _pickupAddress = '';
+  String _sessionToken = DateTime.now().microsecondsSinceEpoch.toString();
+
   static const double _fallbackLat = 6.5244;
   static const double _fallbackLng = 3.3792;
 
@@ -78,6 +80,8 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
+    final pickup = _pickupLatLng;
+
     ref.listen<dynamic>(nearbyDriversProvider, (previous, next) {
       final driverList =
           (next is Map ? next['drivers'] as List<dynamic>? : null) ?? [];
@@ -85,7 +89,6 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
     });
 
     final nearbyDrivers = ref.watch(nearbyDriversProvider);
-    // final rideroffers = ref.watch(driverOfferProvider);
     final drivers =
         (nearbyDrivers is Map
             ? nearbyDrivers['drivers'] as List<dynamic>?
@@ -100,15 +103,19 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
         onTap: () => _destinationFocusNode.unfocus(),
         child: Stack(
           children: [
-            MapWidget(
+            GoogleMap(
               key: const ValueKey('request_ride_map'),
-              styleUri: isDark
-                  ? MapboxStyles.DARK
-                  : MapboxStyles.MAPBOX_STREETS,
+              initialCameraPosition: CameraPosition(
+                target: LatLng(pickup.lat, pickup.lng),
+                zoom: 15,
+              ),
+              markers: {..._pickupMarkers, ..._destMarkers, ..._driverMarkers},
+              polylines: _routePolylines,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
               onMapCreated: _onMapCreated,
             ),
 
-            // Back button
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.only(left: 16, top: 8),
@@ -118,7 +125,6 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                   colorScheme: colorScheme,
                   onTap: () {
                     ref.read(driverOfferProvider.notifier).clearOffers();
-
                     context.pop();
                   },
                 ),
@@ -154,7 +160,6 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                 ),
               ),
 
-              // Trip summary
               if (_selectedDestination != null)
                 Positioned(
                   left: 0,
@@ -184,7 +189,6 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
                                   colorScheme: colorScheme,
                                 ),
                               ),
-
                               const SizedBox(width: 12),
                               Expanded(
                                 child: paymentCard(

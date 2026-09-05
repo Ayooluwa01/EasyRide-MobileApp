@@ -25,22 +25,62 @@ class LocationSuggestionResponse {
 class LocationSuggestion {
   final String title;
   final String subtitle;
-  final double lng;
-  final double lat;
+  final String placeId;
 
   LocationSuggestion({
     required this.title,
     required this.subtitle,
-    required this.lng,
-    required this.lat,
+    required this.placeId,
   });
 
   factory LocationSuggestion.fromJson(Map<String, dynamic> json) {
     return LocationSuggestion(
       title: json['title'] as String,
       subtitle: json['subtitle'] as String,
-      lng: (json['lng'] as num).toDouble(),
-      lat: (json['lat'] as num).toDouble(),
+      placeId: json['placeId'] as String,
+    );
+  }
+}
+
+class PlaceDetailsResponse {
+  final bool success;
+  final int statusCode;
+  final PlaceDetails data;
+
+  PlaceDetailsResponse({
+    required this.success,
+    required this.statusCode,
+    required this.data,
+  });
+
+  factory PlaceDetailsResponse.fromJson(Map<String, dynamic> json) {
+    return PlaceDetailsResponse(
+      success: json['success'] as bool,
+      statusCode: json['statusCode'] as int,
+      data: PlaceDetails.fromJson(json['data'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class PlaceDetails {
+  final String placeId;
+  final String address;
+  final double latitude;
+  final double longitude;
+
+  PlaceDetails({
+    required this.placeId,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory PlaceDetails.fromJson(Map<String, dynamic> json) {
+    return PlaceDetails(
+      placeId: json['placeId'] as String,
+      address: json['address'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
     );
   }
 }
@@ -58,12 +98,10 @@ class GetRouteRequest {
     required this.destLat,
   });
 
-  Map<String, dynamic> toQueryParameters() {
+  Map<String, dynamic> toJson() {
     return {
-      'originLng': originLng,
-      'originLat': originLat,
-      'destLng': destLng,
-      'destLat': destLat,
+      'origin': {'latitude': originLat, 'longitude': originLng},
+      'destination': {'latitude': destLat, 'longitude': destLng},
     };
   }
 }
@@ -90,13 +128,13 @@ class GetRouteResponse {
 
 class RouteData {
   final num baseFare;
-  final List<List<double>> coordinates;
+  final String polyline;
   final double distanceMeters;
   final double durationSeconds;
 
   RouteData({
     required this.baseFare,
-    required this.coordinates,
+    required this.polyline,
     required this.distanceMeters,
     required this.durationSeconds,
   });
@@ -104,13 +142,7 @@ class RouteData {
   factory RouteData.fromJson(Map<String, dynamic> json) {
     return RouteData(
       baseFare: json['baseFare'] as num,
-      coordinates: (json['coordinates'] as List<dynamic>)
-          .map(
-            (coordinate) => (coordinate as List<dynamic>)
-                .map((value) => (value as num).toDouble())
-                .toList(),
-          )
-          .toList(),
+      polyline: json['polyline'] as String,
       distanceMeters: (json['distanceMeters'] as num).toDouble(),
       durationSeconds: (json['durationSeconds'] as num).toDouble(),
     );

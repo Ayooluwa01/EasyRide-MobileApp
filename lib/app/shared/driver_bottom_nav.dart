@@ -1,46 +1,32 @@
-import 'package:easy_ride/features/rider/screens/rider_chat_screen.dart';
-import 'package:easy_ride/features/rider/screens/rider_home_screen.dart';
-import 'package:easy_ride/features/rider/screens/rider_profile_screen.dart';
-import 'package:easy_ride/features/rider/screens/rider_trip_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class BottomNav extends StatefulWidget {
-  const BottomNav({super.key});
+class DriverBottomNav extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
 
-  @override
-  State<BottomNav> createState() => _BottomNavState();
-}
-
-class _BottomNavState extends State<BottomNav> {
-  int _currentIndex = 0;
+  const DriverBottomNav({super.key, required this.navigationShell});
 
   static const Color activeGreen = Color(0xFF22C55E);
   static const Color activeText = Color(0xFF111827);
   static const Color inactiveGrey = Color(0xFF9CA3AF);
 
-  final List<Widget> _screens = const [
-    RiderHomeScreen(),
-    RiderTripScreen(),
-    RiderChatListScreen(),
-    RiderProfileScreen(),
-  ];
-
-  final List<_NavItemData> _items = const [
+  static const List<_NavItemData> _items = [
     _NavItemData(icon: Icons.home_rounded, label: 'Home'),
-    _NavItemData(icon: Icons.history_rounded, label: 'Trips'),
+    _NavItemData(icon: Icons.history_rounded, label: 'Rides'),
     _NavItemData(icon: Icons.chat_bubble_rounded, label: 'Chats'),
     _NavItemData(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = navigationShell.currentIndex;
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: _buildNavBar(),
+      body: navigationShell,
+      bottomNavigationBar: _buildNavBar(context, currentIndex),
     );
   }
 
-  Widget _buildNavBar() {
+  Widget _buildNavBar(BuildContext context, int currentIndex) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -63,7 +49,10 @@ class _BottomNavState extends State<BottomNav> {
               for (int index = 0; index < _items.length; index++)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => setState(() => _currentIndex = index),
+                  onTap: () => navigationShell.goBranch(
+                    index,
+                    initialLocation: index == currentIndex,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -71,7 +60,7 @@ class _BottomNavState extends State<BottomNav> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: index == _currentIndex
+                          color: index == currentIndex
                               ? activeGreen
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(14),
@@ -79,7 +68,7 @@ class _BottomNavState extends State<BottomNav> {
                         child: Icon(
                           _items[index].icon,
                           size: 22,
-                          color: index == _currentIndex
+                          color: index == currentIndex
                               ? Colors.black
                               : inactiveGrey,
                         ),
@@ -90,10 +79,10 @@ class _BottomNavState extends State<BottomNav> {
                         style: TextStyle(
                           fontSize: 10,
                           letterSpacing: 0.5,
-                          fontWeight: index == _currentIndex
+                          fontWeight: index == currentIndex
                               ? FontWeight.w700
                               : FontWeight.w500,
-                          color: index == _currentIndex
+                          color: index == currentIndex
                               ? activeText
                               : inactiveGrey,
                         ),

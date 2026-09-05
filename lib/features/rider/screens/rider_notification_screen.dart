@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class RiderNotificationSettings extends StatefulWidget {
-  const RiderNotificationSettings({super.key});
+class NotificationSettings extends StatefulWidget {
+  const NotificationSettings({super.key});
 
   @override
-  State<RiderNotificationSettings> createState() =>
-      _RiderNotificationSettingsState();
+  State<NotificationSettings> createState() => _NotificationSettingsState();
 }
 
-class _RiderNotificationSettingsState extends State<RiderNotificationSettings> {
+class _NotificationSettingsState extends State<NotificationSettings> {
   bool _rideUpdates = true;
   bool _promotions = true;
   bool _messages = true;
@@ -88,7 +87,7 @@ class _RiderNotificationSettingsState extends State<RiderNotificationSettings> {
               _NotificationTile(
                 icon: Icons.chat_bubble_outline,
                 title: "Messages",
-                subtitle: "New chat from driver",
+                subtitle: "New chat alerts",
                 value: _messages,
                 onChanged: (v) => setState(() => _messages = v),
               ),

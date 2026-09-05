@@ -122,8 +122,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
         );
 
         try {
-          await ref.read(currentUserProvider.notifier).getCurrentUser();
-
+          ref.watch(currentUserProvider.notifier);
           if (!mounted) return;
 
           context.go(RouteNames.rider);
