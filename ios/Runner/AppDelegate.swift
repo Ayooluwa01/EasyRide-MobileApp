@@ -12,7 +12,9 @@ import GoogleMaps
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GMSServices.provideAPIKey("AIzaSyBBEeafHHauSrLjWnhcg0ao6f-U7qzsB8E")
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String, !apiKey.isEmpty {
+      GMSServices.provideAPIKey(apiKey)
+    }
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }
