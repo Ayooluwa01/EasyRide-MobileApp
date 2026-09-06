@@ -29,9 +29,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <meta-data android:name="com.google.android.geo.API_KEY"
-           android:value="AIzaSyBBEeafHHauSrLjWnhcg0ao6f-U7qzsB8E"/>
-
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="${mapsApiKey}" />
         <!-- MainActivity Configuration -->
         <activity
             android:name=".MainActivity"
