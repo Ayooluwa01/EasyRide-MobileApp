@@ -1,7 +1,5 @@
 // get_ride_by_id_notifier.dart
 
-import 'dart:developer' as developer;
-
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/models/get_ride_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

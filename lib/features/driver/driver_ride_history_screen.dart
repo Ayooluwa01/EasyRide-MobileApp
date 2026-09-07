@@ -1,9 +1,13 @@
 import 'package:easy_ride/app/models/ride_offer_model.dart';
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/ride_history.dart';
 import 'package:easy_ride/app/services/ride_offer_provider.dart';
+import 'package:easy_ride/app/shared/app_activity_provider.dart';
 import 'package:easy_ride/app/shared/ride_offer_card.dart';
+import 'package:easy_ride/core/controllers/active_ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum DriverRideTab { requests, history }
@@ -28,12 +32,39 @@ class _DriverRideHistoryScreenState
     });
   }
 
-  void _acceptOffer(RideOfferModel offer) {
-    // ref.read(rideOffersProvider.notifier).removeOffer(offer.rideId);
+  void _acceptOffer(RideOfferModel offer, num counterOfferAmount) async {
+    final success = await ref
+        .read(rideOffersProvider.notifier)
+        .acceptOffer(offer.rideId, counterOfferAmount);
+
+    if (!mounted) return;
+    if (success) {
+      ref
+          .read(appToastProvider.notifier)
+          .showSuccess("OFFER SENT SUCCESSFULLY");
+      return;
+    }
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This ride is no longer available')),
+      );
+    }
   }
 
-  void _rejectOffer(RideOfferModel offer) {
-    // ref.read(rideOffersProvider.notifier).removeOffer(offer.rideId);
+  void _rejectOffer(RideOfferModel offer) async {
+    final success = await ref
+        .read(rideOffersProvider.notifier)
+        .rejectOffer(offer.rideId);
+
+    if (!mounted) return;
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -46,10 +77,12 @@ class _DriverRideHistoryScreenState
       fontWeight: FontWeight.w700,
     );
     final interBaseStyle = GoogleFonts.inter();
-
     final tripsState = ref.watch(rideHistoryProvider);
     final offers = ref.watch(rideOffersProvider);
-
+    // websocket
+    final websocket = ref.watch(activeRideProvider);
+    final status = websocket?['status'];
+    print('ride offer status $status');
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -125,7 +158,8 @@ class _DriverRideHistoryScreenState
                 key: ValueKey(offer.rideId),
                 offer: offer,
                 isOnline: true,
-                onAccept: () => _acceptOffer(offer),
+                onAccept: (counterOfferAmount) =>
+                    _acceptOffer(offer, counterOfferAmount),
                 onReject: () => _rejectOffer(offer),
               );
             },
@@ -167,7 +201,7 @@ class _DriverRideHistoryScreenState
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: 20),
           itemCount: trips.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
           itemBuilder: (context, index) {
             // return _TripHistoryCard(
             //   trip: trips[index],

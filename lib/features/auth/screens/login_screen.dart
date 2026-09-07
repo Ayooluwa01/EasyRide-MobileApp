@@ -21,6 +21,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   late final TextEditingController _numberController;
   late final TextEditingController _emailEditingController;
 
+  final interBaseStyle = GoogleFonts.inter();
+  final syneBaseStyle = GoogleFonts.syne(
+    fontSize: 30,
+    height: 1.2,
+    fontWeight: FontWeight.w700,
+  );
   @override
   void initState() {
     super.initState();
@@ -73,13 +79,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
-    final interBaseStyle = GoogleFonts.inter();
-    final syneBaseStyle = GoogleFonts.syne(
-      fontSize: 30,
-      height: 1.2,
-      fontWeight: FontWeight.w700,
-    );
 
     final inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

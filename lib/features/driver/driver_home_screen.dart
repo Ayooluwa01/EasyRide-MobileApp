@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DriverHomeScreen extends ConsumerStatefulWidget {
   const DriverHomeScreen({super.key});
@@ -20,6 +21,8 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
 class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
   GoogleMapController? _controller;
   static const LatLng _target = LatLng(6.5244, 3.3792); // Lagos
+  final interBaseStyle = GoogleFonts.inter();
+  final syneBaseStyle = GoogleFonts.syne(height: 1.15);
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +33,11 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final syneBaseStyle = GoogleFonts.syne(height: 1.15);
     final userLatLng = ref.watch(userLatLngProvider);
+    final isLocationLoading = userLatLng == null;
     final cameraTarget = userLatLng != null
         ? LatLng(userLatLng.latitude, userLatLng.longitude)
         : _target;
-    final interBaseStyle = GoogleFonts.inter();
     final driverPhotoUrl = profile?.driverPhotoUrl ?? user?.profilePhotoUrl;
     ref.listen(userLatLngProvider, (previous, next) {
       if (next != null && _controller != null) {
@@ -56,40 +58,43 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
               // ==========================================================
               // GREETING
               // ==========================================================
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _greeting(),
-                          style: interBaseStyle.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.primary,
+              Skeletonizer(
+                enabled: userState.isLoading,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _greeting(),
+                            style: interBaseStyle.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.primary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          user?.fullName ?? '?',
-                          style: syneBaseStyle.copyWith(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
+                          const SizedBox(height: 2),
+                          Text(
+                            user?.fullName ?? '?',
+                            style: syneBaseStyle.copyWith(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  _AvatarWithStatusDot(
-                    name: user?.fullName ?? 'D',
-                    imageUrl: driverPhotoUrl,
-                    isOnline: isOnline,
-                    colorScheme: colorScheme,
-                    scaffoldBg: theme.scaffoldBackgroundColor,
-                  ),
-                ],
+                    _AvatarWithStatusDot(
+                      name: user?.fullName ?? 'D',
+                      imageUrl: driverPhotoUrl,
+                      isOnline: isOnline,
+                      colorScheme: colorScheme,
+                      scaffoldBg: theme.scaffoldBackgroundColor,
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -97,29 +102,31 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
               // ==========================================================
               // ONLINE / OFFLINE  CARD
               // ==========================================================
-              _OnlineStatusHero(
-                isOnline: isOnline,
-                onToggle: (value) async {
-                  try {
-                    await ref
-                        .read(driverOnlineServiceProvider)
-                        .toggleOnlineStatus(value);
-                  } catch (e) {
-                    if (!mounted) return;
+              Skeletonizer(
+                enabled: userState.isLoading,
+                child: _OnlineStatusHero(
+                  isOnline: isOnline,
+                  onToggle: (value) async {
+                    try {
+                      await ref
+                          .read(driverOnlineServiceProvider)
+                          .toggleOnlineStatus(value);
+                    } catch (e) {
+                      if (!mounted) return;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Failed to update online status'),
-                      ),
-                    );
-                  }
-                },
-                colorScheme: colorScheme,
-                isDark: isDark,
-                syneBaseStyle: syneBaseStyle,
-                interBaseStyle: interBaseStyle,
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to update online status'),
+                        ),
+                      );
+                    }
+                  },
+                  colorScheme: colorScheme,
+                  isDark: isDark,
+                  syneBaseStyle: syneBaseStyle,
+                  interBaseStyle: interBaseStyle,
+                ),
               ),
-
               const SizedBox(height: 28),
 
               // ==========================================================
@@ -135,47 +142,50 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.account_balance_wallet_rounded,
-                      label: 'Earnings',
-                      value: '₦0',
-                      accent: const Color(0xFF2ED47A),
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      syneBaseStyle: syneBaseStyle,
-                      interBaseStyle: interBaseStyle,
+              Skeletonizer(
+                enabled: userState.isLoading,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.account_balance_wallet_rounded,
+                        label: 'Earnings',
+                        value: '₦0',
+                        accent: const Color(0xFF2ED47A),
+                        colorScheme: colorScheme,
+                        isDark: isDark,
+                        syneBaseStyle: syneBaseStyle,
+                        interBaseStyle: interBaseStyle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.local_taxi_rounded,
-                      label: 'Trips',
-                      value: '0',
-                      accent: const Color(0xFF5B8DEF),
-                      colorScheme: colorScheme,
-                      isDark: isDark,
-                      syneBaseStyle: syneBaseStyle,
-                      interBaseStyle: interBaseStyle,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.local_taxi_rounded,
+                        label: 'Trips',
+                        value: '0',
+                        accent: const Color(0xFF5B8DEF),
+                        colorScheme: colorScheme,
+                        isDark: isDark,
+                        syneBaseStyle: syneBaseStyle,
+                        interBaseStyle: interBaseStyle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Expanded(
-                  //   child: _StatCard(
-                  //     icon: Icons.star_rounded,
-                  //     label: 'Rating',
-                  //     value: '—',
-                  //     accent: const Color(0xFFFFB020),
-                  //     colorScheme: colorScheme,
-                  //     isDark: isDark,
-                  //     syneBaseStyle: syneBaseStyle,
-                  //     interBaseStyle: interBaseStyle,
-                  //   ),
-                  // ),
-                ],
+                    const SizedBox(width: 12),
+                    // Expanded(
+                    //   child: _StatCard(
+                    //     icon: Icons.star_rounded,
+                    //     label: 'Rating',
+                    //     value: '—',
+                    //     accent: const Color(0xFFFFB020),
+                    //     colorScheme: colorScheme,
+                    //     isDark: isDark,
+                    //     syneBaseStyle: syneBaseStyle,
+                    //     interBaseStyle: interBaseStyle,
+                    //   ),
+                    // ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 28),
@@ -193,23 +203,27 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 220,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: cameraTarget,
-                      zoom: 14,
+              Skeletonizer(
+                enabled: isLocationLoading,
+                child: SizedBox(
+                  height: 220,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: cameraTarget,
+                        zoom: 14,
+                      ),
+                      onMapCreated: (controller) {
+                        _controller = controller;
+                      },
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
                     ),
-                    onMapCreated: (controller) {
-                      _controller = controller;
-                    },
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
                   ),
                 ),
               ),
+
               // if (!isOnline)
               //   Center(
               //     child: Padding(
@@ -687,10 +701,10 @@ class _RideOffers extends StatefulWidget {
     required this.isDark,
     required this.isOnline,
     required this.fare,
-    this.pickup = 'Lekki Phase 1',
-    this.dropoff = 'Ajah, Lagos',
-    this.etaMinutes = '3 mins',
-    this.distanceKm = '6.2 km',
+    required this.pickup,
+    required this.dropoff,
+    required this.etaMinutes,
+    required this.distanceKm,
     this.onAccept,
     this.onReject,
   });

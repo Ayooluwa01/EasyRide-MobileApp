@@ -51,7 +51,7 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   int _nearbyDriversCount = 0;
   final Map<String, Marker> _driverAnnotations = {};
   PaymentMethod _selectedPaymentMethod = PaymentMethod.CASH;
-  String _pickupAddress = '';
+  final String _pickupAddress = '';
   String _sessionToken = DateTime.now().microsecondsSinceEpoch.toString();
 
   static const double _fallbackLat = 6.5244;

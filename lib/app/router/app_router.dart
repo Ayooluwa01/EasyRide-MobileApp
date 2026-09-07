@@ -6,6 +6,7 @@ import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/login_screen.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
+import 'package:easy_ride/features/driver/driver_active_ride_screen.dart';
 import 'package:easy_ride/features/driver/driver_home_screen.dart';
 import 'package:easy_ride/features/driver/driver_profile_screen.dart';
 import 'package:easy_ride/features/driver/driver_ride_history_screen.dart';
@@ -252,7 +253,13 @@ final appRouter = GoRouter(
         return ChatScreen(rideId: rideId);
       },
     ),
-
+    GoRoute(
+      path: RouteNames.activeride,
+      name: "driveractiveride",
+      builder: (context, state) {
+        return const DriverActiveRideScreen();
+      },
+    ),
     // =========================================================
     // DRIVER---WITH CONSISTENT BOTTOM NAV USING SHELLROUTE,INDEXED STACK
     // =========================================================

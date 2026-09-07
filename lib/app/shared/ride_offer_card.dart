@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 class RideOfferCard extends StatefulWidget {
   final RideOfferModel offer;
   final bool isOnline;
-  final VoidCallback? onAccept;
+  final ValueChanged<num>? onAccept;
   final VoidCallback? onReject;
 
   const RideOfferCard({
@@ -311,7 +311,9 @@ class _RideOfferCardState extends State<RideOfferCard> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: isOnline ? widget.onAccept : null,
+                  onPressed: isOnline
+                      ? () => widget.onAccept?.call(_offer)
+                      : null,
                   icon: const Icon(Icons.check_rounded, size: 19),
                   label: const Text(
                     'Accept ride',

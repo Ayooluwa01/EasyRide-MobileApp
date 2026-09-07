@@ -15,6 +15,8 @@ class RouteNames {
   static const activeride = '/activeride';
   static const chatscreen = '/rider/chats';
   static const driverhomescreen = '/driver/home';
+  static const driveractiveride = '/driver/activeride';
+
   static const driverrides = '/driver/ride';
   static const driverchat = '/driver/chat';
   static const driverprofile = '/driver/profile';

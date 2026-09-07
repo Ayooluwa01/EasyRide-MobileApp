@@ -17,6 +17,7 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
     _socket.on(SocketEvents.rideCompleted, _onRideCompleted);
     _socket.on(SocketEvents.rideCancelled, _onRideCancelled);
     _socket.on(SocketEvents.driverLocation, _onDriverLocation);
+    _socket.on(SocketEvents.rideMatched, _onRideMatched);
 
     ref.onDispose(() {
       _socket.off(SocketEvents.rideMatched, _onRideMatched);

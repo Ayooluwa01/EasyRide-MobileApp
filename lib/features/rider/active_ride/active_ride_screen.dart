@@ -73,8 +73,6 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
       final status = next?['status'];
 
       if (status == 'IN_PROGRESS') {
-        print('RIDE IS NOW IN PROGRESS');
-
         _updateMarkersAndRoute();
       }
     });
@@ -262,7 +260,7 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
     }
 
     _routeDebounce?.cancel();
-    _routeDebounce = Timer(const Duration(seconds: 5), () {
+    _routeDebounce = Timer(const Duration(seconds: 1), () {
       _fetchRoadRoute(
         riderLat: riderLat,
         riderLng: riderLng,

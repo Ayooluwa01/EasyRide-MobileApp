@@ -62,22 +62,22 @@ class _SignupScreenState extends State<SignupScreen> {
     _submitSignup();
   }
 
+  void goBack() {
+    if (step > 0) {
+      prevStep();
+      return;
+    }
+
+    if (context.canPop()) {
+      context.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
-    void goBack() {
-      if (step > 0) {
-        prevStep();
-        return;
-      }
-
-      if (context.canPop()) {
-        context.pop();
-      }
-    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

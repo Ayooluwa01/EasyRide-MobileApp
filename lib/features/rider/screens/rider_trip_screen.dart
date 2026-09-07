@@ -78,7 +78,7 @@ class _RiderTripScreenState extends ConsumerState<RiderTripScreen> {
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 20),
                       itemCount: trips.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      separatorBuilder: (_, _) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
                         return _TripHistoryCard(
                           trip: trips[index],

@@ -4,14 +4,15 @@ import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/models/ride_offer_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class RideOffersNotifier extends AsyncNotifier<List<RideOfferModel>> {
+class RideOffersNotifier
+    extends AutoDisposeAsyncNotifier<List<RideOfferModel>> {
   late final ApiClient _apiClient;
 
   @override
   Future<List<RideOfferModel>> build() async {
     _apiClient = ref.read(apiClientProvider);
-
     return getActiveRideRequests();
   }
 
@@ -23,6 +24,7 @@ class RideOffersNotifier extends AsyncNotifier<List<RideOfferModel>> {
         'AVAILABLE RIDE OFFERS: ${response.data}',
         name: 'RideOffersNotifier',
       );
+
       final List<dynamic> data = response.data['data'];
 
       return data
@@ -35,7 +37,6 @@ class RideOffersNotifier extends AsyncNotifier<List<RideOfferModel>> {
         error: e,
         stackTrace: stackTrace,
       );
-
       rethrow;
     }
   }
@@ -52,9 +53,60 @@ class RideOffersNotifier extends AsyncNotifier<List<RideOfferModel>> {
       currentOffers.where((offer) => offer.rideId != rideId).toList(),
     );
   }
+
+  Future<bool> acceptOffer(String rideId, num amount) async {
+    try {
+      final response = await _apiClient.post(
+        '/rides/$rideId/accept',
+        data: {'amount': amount.toString()},
+      );
+
+      developer.log(
+        'Accept ride response: ${response.data}',
+        name: 'RideOffersNotifier',
+      );
+
+      removeOffer(rideId);
+      return true;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to accept ride $rideId',
+        name: 'RideOffersNotifier',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      await refreshOffers();
+      return false;
+    }
+  }
+
+  Future<bool> rejectOffer(String rideId) async {
+    try {
+      final response = await _apiClient.post('/rides/$rideId/reject');
+
+      developer.log(
+        'Reject ride response: ${response.data}',
+        name: 'RideOffersNotifier',
+      );
+
+      removeOffer(rideId);
+      return true;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to reject ride $rideId',
+        name: 'RideOffersNotifier',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      await refreshOffers();
+      return false;
+    }
+  }
 }
 
 final rideOffersProvider =
-    AsyncNotifierProvider<RideOffersNotifier, List<RideOfferModel>>(
+    AsyncNotifierProvider.autoDispose<RideOffersNotifier, List<RideOfferModel>>(
       RideOffersNotifier.new,
     );
