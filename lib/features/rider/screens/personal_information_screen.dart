@@ -32,7 +32,7 @@ class _RiderPersonalInformationScreenState
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(currentUserProvider.notifier).getCurrentUser();
+      ref.watch(currentUserProvider);
     });
   }
 
@@ -46,9 +46,9 @@ class _RiderPersonalInformationScreenState
 
   void _hydrateFromUser(User user) {
     if (_hasHydrated) return;
-    _fullNameController.text = user.fullName;
-    _emailController.text = user.email;
-    _phoneController.text = user.phone;
+    _fullNameController.text = user.fullName!;
+    _emailController.text = user.email!;
+    _phoneController.text = user.phone!;
     _hasHydrated = true;
   }
 
@@ -172,8 +172,7 @@ class _RiderPersonalInformationScreenState
               ),
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () =>
-                    ref.read(currentUserProvider.notifier).getCurrentUser(),
+                onPressed: () => ref.watch(currentUserProvider.notifier),
                 child: const Text("Retry"),
               ),
             ],

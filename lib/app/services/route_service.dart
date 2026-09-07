@@ -11,9 +11,9 @@ class RouteService {
   ApiClient get _apiClient => ref.read(apiClientProvider);
 
   Future<GetRouteResponse> getRoute(GetRouteRequest request) async {
-    final response = await _apiClient.get(
+    final response = await _apiClient.post(
       Endpoints.getRoute,
-      queryParameters: request.toQueryParameters(),
+      data: request.toJson(),
     );
     return GetRouteResponse.fromJson(response.data);
   }

@@ -1,59 +1,48 @@
-// ignore_for_file: invalid_use_of_protected_member, library_private_types_in_public_api
+// ignore_for_file: deprecated_member_use, invalid_use_of_protected_member, library_private_types_in_public_api
 
 part of 'request_ride_screen.dart';
 
 extension RequestRideLogic on _RequestRideScreenState {
-  Future<void> _onMapCreated(MapboxMap controller) async {
-    _mapboxController = controller;
-
-    await controller.location.updateSettings(
-      LocationComponentSettings(enabled: true, pulsingEnabled: true),
-    );
-
-    _pickupAnnotationManager = await controller.annotations
-        .createCircleAnnotationManager();
-    _destAnnotationManager = await controller.annotations
-        .createCircleAnnotationManager();
-    _driversAnnotationManager = await controller.annotations
-        .createCircleAnnotationManager(); // new
+  Future<void> _onMapCreated(GoogleMapController controller) async {
+    _mapController = controller;
 
     final pickup = _pickupLatLng;
-    await _drawPickupMarker(pickup.lat, pickup.lng);
+    _drawPickupMarker(pickup.lat, pickup.lng);
 
     final nearby = ref.read(nearbyDriversProvider);
     final drivers =
         (nearby is Map ? nearby['drivers'] as List<dynamic>? : null) ?? [];
     await _updateDriverMarkers(drivers);
 
-    await controller.easeTo(
-      CameraOptions(
-        center: Point(coordinates: Position(pickup.lng, pickup.lat)),
-        zoom: 15.5,
+    await controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: LatLng(pickup.lat, pickup.lng), zoom: 15.5),
       ),
-      MapAnimationOptions(duration: 700),
     );
   }
 
-  Future<void> _drawPickupMarker(double lat, double lng) async {
-    final manager = _pickupAnnotationManager;
-    if (manager == null) return;
-    await manager.deleteAll();
-    await manager.create(
-      CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(lng, lat)),
-        circleRadius: 7,
-        circleColor: Colors.white.toARGB32(),
-        circleStrokeWidth: 3,
-        circleStrokeColor: const Color(0xFF1E1E1E).toARGB32(),
-      ),
-    );
+  void _drawPickupMarker(double lat, double lng) {
+    setState(() {
+      _pickupMarkers
+        ..clear()
+        ..add(
+          Marker(
+            markerId: const MarkerId('pickup'),
+            position: LatLng(lat, lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueAzure,
+            ),
+            anchor: const Offset(0.5, 0.5),
+            zIndex: 2,
+          ),
+        );
+    });
   }
 
   Future<void> _updateDriverMarkers(List<dynamic> drivers) async {
-    final manager = _driversAnnotationManager;
-    if (manager == null) return;
-
     final incomingIds = <String>{};
+    final updatedMarkers = <String, Marker>{};
+
     for (int i = 0; i < drivers.length; i++) {
       final driver = drivers[i];
       final id = '${driver['driverId']}';
@@ -62,124 +51,87 @@ extension RequestRideLogic on _RequestRideScreenState {
       if (lat == null || lng == null) continue;
 
       incomingIds.add(id);
-      final point = Point(coordinates: Position(lng, lat));
-      final existing = _driverAnnotations[id];
+      updatedMarkers[id] = Marker(
+        markerId: MarkerId('driver_$id'),
+        position: LatLng(lat, lng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 1,
+      );
+    }
 
-      if (existing != null) {
-        existing.geometry = point;
-        await manager.update(existing);
-      } else {
-        final created = await manager.create(
-          CircleAnnotationOptions(
-            geometry: point,
-            circleRadius: 7,
-            circleColor: const Color.fromARGB(255, 42, 12, 12).toARGB32(),
-            circleStrokeWidth: 2.5,
-            circleStrokeColor: Colors.white.toARGB32(),
+    if (!mounted) return;
+    setState(() {
+      _driverAnnotations
+        ..clear()
+        ..addAll(updatedMarkers);
+      _driverMarkers
+        ..clear()
+        ..addAll(updatedMarkers.values);
+    });
+  }
+
+  void _drawDestinationMarker(double lat, double lng, Color primary) {
+    setState(() {
+      _destMarkers
+        ..clear()
+        ..add(
+          Marker(
+            markerId: const MarkerId('destination'),
+            position: LatLng(lat, lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen,
+            ),
+            anchor: const Offset(0.5, 0.5),
+            zIndex: 2,
           ),
         );
-        _driverAnnotations[id] = created;
-      }
-    }
-
-    final staleIds = _driverAnnotations.keys
-        .where((id) => !incomingIds.contains(id))
-        .toList();
-
-    for (int i = 0; i < staleIds.length; i++) {
-      final annotation = _driverAnnotations.remove(staleIds[i]);
-      if (annotation != null) await manager.delete(annotation);
-    }
+    });
   }
 
-  Future<void> _drawDestinationMarker(
-    double lat,
-    double lng,
-    Color primary,
-  ) async {
-    final manager = _destAnnotationManager;
-    if (manager == null) return;
-    await manager.deleteAll();
-    await manager.create(
-      CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(lng, lat)),
-        circleRadius: 8,
-        circleColor: primary.toARGB32(),
-        circleStrokeWidth: 3,
-        circleStrokeColor: Colors.white.toARGB32(),
-      ),
-    );
-  }
-
-  Future<void> getLineLayer(
+  Future<void> _drawRoute(
     List<List<double>> coordinates,
     Color primaryColor,
   ) async {
-    final controller = _mapboxController;
-    if (controller == null || coordinates.isEmpty) return;
+    if (coordinates.isEmpty) return;
 
-    final routeGeoJson = jsonEncode({
-      'type': 'Feature',
-      'properties': {},
-      'geometry': {'type': 'LineString', 'coordinates': coordinates},
-    });
+    final points = coordinates
+        .map((c) => LatLng(c[1], c[0]))
+        .toList(growable: false);
 
-    if (!_hasRouteLayer) {
-      await controller.style.addSource(
-        GeoJsonSource(
-          id: _RequestRideScreenState._routeSourceId,
-          data: routeGeoJson,
+    setState(() {
+      _routePolylines = {
+        Polyline(
+          polylineId: const PolylineId('route-casing'),
+          points: points,
+          color: Colors.black.withValues(alpha: 0.25),
+          width: 9,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          zIndex: 0,
         ),
-      );
-
-      await controller.style.addLayer(
-        LineLayer(
-          id: _RequestRideScreenState._routeCasingLayerId,
-          sourceId: _RequestRideScreenState._routeSourceId,
-          lineJoin: LineJoin.ROUND,
-          lineCap: LineCap.ROUND,
-          lineWidth: 9,
-          lineColor: Colors.black.toARGB32(),
-          lineOpacity: 0.25,
+        Polyline(
+          polylineId: const PolylineId('route-line'),
+          points: points,
+          color: primaryColor,
+          width: 5,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          zIndex: 1,
         ),
-      );
-
-      await controller.style.addLayer(
-        LineLayer(
-          id: _RequestRideScreenState._routeLineLayerId,
-          sourceId: _RequestRideScreenState._routeSourceId,
-          lineJoin: LineJoin.ROUND,
-          lineCap: LineCap.ROUND,
-          lineWidth: 5,
-          lineColor: primaryColor.toARGB32(),
-        ),
-      );
-
+      };
       _hasRouteLayer = true;
-    } else {
-      await controller.style.setStyleSourceProperty(
-        _RequestRideScreenState._routeSourceId,
-        'data',
-        routeGeoJson,
-      );
-    }
+    });
   }
 
-  Future<void> _removeRouteLineLayer() async {
-    final controller = _mapboxController;
-    if (controller == null || !_hasRouteLayer) return;
-    try {
-      await controller.style.removeStyleLayer(
-        _RequestRideScreenState._routeLineLayerId,
-      );
-      await controller.style.removeStyleLayer(
-        _RequestRideScreenState._routeCasingLayerId,
-      );
-      await controller.style.removeStyleSource(
-        _RequestRideScreenState._routeSourceId,
-      );
-    } catch (_) {}
-    _hasRouteLayer = false;
+  Future<void> _removeRoute() async {
+    if (!_hasRouteLayer) return;
+    setState(() {
+      _routePolylines = {};
+      _hasRouteLayer = false;
+    });
   }
 
   Future<void> _fitCameraToRoute({
@@ -189,37 +141,25 @@ extension RequestRideLogic on _RequestRideScreenState {
     required double destLng,
     required double distanceKm,
   }) async {
-    final controller = _mapboxController;
+    final controller = _mapController;
     if (controller == null) return;
 
-    final midLat = (pickupLat + destLat) / 2;
-    final midLng = (pickupLng + destLng) / 2;
-
-    double zoom;
-    if (distanceKm < 1) {
-      zoom = 14.5;
-    } else if (distanceKm < 3) {
-      zoom = 13.3;
-    } else if (distanceKm < 7) {
-      zoom = 12.2;
-    } else if (distanceKm < 15) {
-      zoom = 11;
-    } else {
-      zoom = 9.5;
-    }
-
-    await controller.easeTo(
-      CameraOptions(
-        center: Point(coordinates: Position(midLng, midLat)),
-        zoom: zoom,
-        padding: MbxEdgeInsets(top: 220, left: 40, right: 40, bottom: 260),
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(pickupLat, destLat),
+        math.min(pickupLng, destLng),
       ),
-      MapAnimationOptions(duration: 900),
+      northeast: LatLng(
+        math.max(pickupLat, destLat),
+        math.max(pickupLng, destLng),
+      ),
     );
+
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   // ---------------------------------------------------------------------
-  // Search (Mapbox Geocoding)
+  // Search — Places Autocomplete, suggestions carry placeId (no coords yet)
   // ---------------------------------------------------------------------
 
   void _onDestinationChanged(String query) {
@@ -227,14 +167,13 @@ extension RequestRideLogic on _RequestRideScreenState {
     final trimmed = query.trim();
     final requestId = ++_searchRequestId;
 
-    // Typing again after a place was picked clears the confirmed selection.
     if (_selectedDestination != null) {
       setState(() {
         _selectedDestination = null;
         _routeInfo = null;
+        _destMarkers.clear();
       });
-      _destAnnotationManager?.deleteAll();
-      unawaited(_removeRouteLineLayer());
+      unawaited(_removeRoute());
     }
 
     if (trimmed.isEmpty) {
@@ -248,7 +187,7 @@ extension RequestRideLogic on _RequestRideScreenState {
     setState(() => _isSearching = true);
 
     _debounceTimer = Timer(const Duration(milliseconds: 400), () async {
-      final results = await _fetchMapboxGeocodingResults(trimmed);
+      final results = await _fetchSuggestions(trimmed);
       if (mounted && requestId == _searchRequestId) {
         setState(() {
           _suggestions = results;
@@ -258,28 +197,27 @@ extension RequestRideLogic on _RequestRideScreenState {
     });
   }
 
-  Future<List<Map<String, dynamic>>> _fetchMapboxGeocodingResults(
-    String query,
-  ) async {
+  Future<List<Map<String, dynamic>>> _fetchSuggestions(String query) async {
+    final pickup = _pickupLatLng;
     try {
       final response = await ref
           .read(suggestionsServiceProvider)
-          .getLocationSuggestion(query);
-      return response.data.map((data) {
-        return {
-          'title': data.title,
-          'subtitle': data.subtitle,
-          'lng': data.lng.toDouble(),
-          'lat': data.lat.toDouble(),
-        };
+          .getLocationSuggestion(
+            query,
+            _sessionToken,
+            pickup.lat.toString(),
+            pickup.lng.toString(),
+          );
+      return response.data.map((s) {
+        return {'title': s.title, 'subtitle': s.subtitle, 'placeId': s.placeId};
       }).toList();
-    } catch (error) {
+    } catch (_) {
       return [];
     }
   }
 
   // ---------------------------------------------------------------------
-  // Route (Mapbox Directions)
+  // Selection —
   // ---------------------------------------------------------------------
 
   Future<void> _selectSuggestion(Map<String, dynamic> place) async {
@@ -287,22 +225,40 @@ extension RequestRideLogic on _RequestRideScreenState {
     _destinationFocusNode.unfocus();
     _debounceTimer?.cancel();
 
-    final destination = RideDestination(
-      title: place['title'] as String,
-      subtitle: place['subtitle'] as String,
-      lat: place['lat'] as double,
-      lng: place['lng'] as double,
-    );
+    final placeId = place['placeId'] as String;
+    final title = place['title'] as String;
 
     setState(() {
-      _selectedDestination = destination;
       _suggestions = [];
       _isRoutingLoading = true;
       _routeInfo = null;
+      _selectedDestination = null;
     });
-    _destinationController.text = destination.title;
+    _destinationController.text = title;
 
-    await _drawDestinationMarker(
+    PlaceDetails details;
+    try {
+      final response = await ref
+          .read(suggestionsServiceProvider)
+          .getPlaceDetails(placeId);
+      details = response.data;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isRoutingLoading = false);
+      return;
+    }
+
+    final destination = RideDestination(
+      title: title,
+      subtitle: details.address,
+      lat: details.latitude,
+      lng: details.longitude,
+    );
+
+    if (!mounted) return;
+    setState(() => _selectedDestination = destination);
+
+    _drawDestinationMarker(
       destination.lat,
       destination.lng,
       colorScheme.primary,
@@ -328,8 +284,10 @@ extension RequestRideLogic on _RequestRideScreenState {
         destLng: destination.lng,
         distanceKm: route.distanceMeters / 1000,
       );
-      await getLineLayer(route.coordinates, colorScheme.primary);
+      await _drawRoute(route.coordinates, colorScheme.primary);
     }
+
+    _sessionToken = DateTime.now().microsecondsSinceEpoch.toString();
   }
 
   Future<RouteInfo?> _fetchDrivingRoute({
@@ -346,14 +304,16 @@ extension RequestRideLogic on _RequestRideScreenState {
     try {
       final response = await ref.read(routeServiceProvider).getRoute(request);
       final route = response.data;
+
+      final decoded = PolylinePoints.decodePolyline(route.polyline);
+      final coordinates = decoded
+          .map((point) => [point.longitude, point.latitude])
+          .toList();
+
       return RouteInfo(
-        coordinates: route.coordinates
-            .map<List<double>>(
-              (c) => [(c[0] as num).toDouble(), (c[1] as num).toDouble()],
-            )
-            .toList(),
-        distanceMeters: route.distanceMeters.toDouble(),
-        durationSeconds: route.durationSeconds.toDouble(),
+        coordinates: coordinates,
+        distanceMeters: route.distanceMeters,
+        durationSeconds: route.durationSeconds,
         baseFare: route.baseFare,
       );
     } catch (_) {
@@ -367,9 +327,10 @@ extension RequestRideLogic on _RequestRideScreenState {
       _selectedDestination = null;
       _routeInfo = null;
       _suggestions = [];
+      _destMarkers.clear();
     });
-    _destAnnotationManager?.deleteAll();
-    unawaited(_removeRouteLineLayer());
+    unawaited(_removeRoute());
+    _sessionToken = DateTime.now().microsecondsSinceEpoch.toString();
   }
 
   Future<void> _confirmRide(num offeredFare) async {
@@ -380,20 +341,32 @@ extension RequestRideLogic on _RequestRideScreenState {
 
     final pickup = _pickupLatLng;
 
+    setState(() {
+      _isConfirmingRide = true;
+    });
+
+    // Resolve pickup address only now, once, using the freshest coordinates
+    String pickupAddress = '';
+    try {
+      final response = await ref
+          .read(suggestionsServiceProvider)
+          .reverseGeocode(pickup.lat, pickup.lng);
+      print('response ${response.data.address}');
+      pickupAddress = response.data.address;
+    } catch (_) {
+      // fall back to placeholder if reverse geocoding fails — don't block the ride
+    }
+
     final request = RequestRideModel(
       pickupLat: pickup.lat,
       pickupLng: pickup.lng,
       dropoffLat: destination.lat,
       dropoffLng: destination.lng,
-      pickupAddress: 'Current location',
+      pickupAddress: pickupAddress,
       dropoffAddress: destination.title,
       paymentMethod: paymentMethod.name,
       fare: offeredFare,
     );
-
-    setState(() {
-      _isConfirmingRide = true;
-    });
 
     try {
       final response = await ref.read(requestRideProvider).requestRide(request);
@@ -402,7 +375,6 @@ extension RequestRideLogic on _RequestRideScreenState {
       final rideId = response.data.rideId;
 
       ref.read(driverOfferProvider.notifier).setRide(rideId);
-      // ref.read(driverOfferProvider);
       setState(() {
         _isConfirmingRide = false;
         _searchNearbyDrivers = true;

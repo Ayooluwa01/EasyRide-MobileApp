@@ -7,11 +7,17 @@ class RouteNames {
   static const otp = '/otp';
   static const riderhomescreen = '/riderhomescreen';
   static const rider = '/rider';
-  static const riderpersonalprofile = '/riderpersonalprofile';
+  static const personalprofile = '/personalprofile';
   static const riderpaymentinformation = '/riderpaymentinformation';
-  static const ridernotification = '/ridernotification';
+  static const notification = '/notification';
   static const ridersecurity = '/ridersecurity';
   static const requestride = '/requestride';
   static const activeride = '/activeride';
   static const chatscreen = '/rider/chats';
+  static const driverhomescreen = '/driver/home';
+  static const driveractiveride = '/driver/activeride';
+
+  static const driverrides = '/driver/ride';
+  static const driverchat = '/driver/chat';
+  static const driverprofile = '/driver/profile';
 }

@@ -122,8 +122,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
         );
 
         try {
-          await ref.read(currentUserProvider.notifier).getCurrentUser();
-
+          ref.watch(currentUserProvider.notifier);
           if (!mounted) return;
 
           context.go(RouteNames.rider);
@@ -267,6 +266,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                       position: _otpSlideAnimation,
                                       child: Center(
                                         child: Pinput(
+                                          keyboardType: TextInputType.text,
                                           controller: _pinController,
                                           length: 4,
                                           hapticFeedbackType:

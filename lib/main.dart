@@ -3,7 +3,6 @@ import 'package:easy_ride/features/wrapper/preloader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 
@@ -15,7 +14,6 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
   await dotenv.load();
-  MapboxOptions.setAccessToken(dotenv.env['MAP_BOX_TOKEN']!);
   runApp(
     ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],

@@ -26,7 +26,8 @@
     <string>$(FLUTTER_BUILD_NUMBER)</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
-
+<key>GMSApiKey</key>
+    <string>$(GMS_API_KEY)</string>
     <!-- Location Permissions -->
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Easy Ride needs your location to find nearby drivers, set pickup points, and track your trip.</string>

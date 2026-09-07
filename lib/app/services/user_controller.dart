@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:easy_ride/app/services/user_service.dart';
 import 'package:easy_ride/features/auth/models/user/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,22 +5,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class UserController extends AsyncNotifier<User?> {
   @override
   Future<User?> build() async {
-    return null;
-  }
-
-  Future<User?> getCurrentUser() async {
     try {
       final userService = ref.read(userServiceProvider);
 
-      final user = await userService.getMe();
-
-      state = AsyncValue.data(user);
-
-      return user;
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      return await userService.getMe();
+    } catch (e, stackTrace) {
+      throw AsyncError(e, stackTrace);
     }
-    return null;
+  }
+
+  Future<void> refreshUser() async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final userService = ref.read(userServiceProvider);
+      return await userService.getMe();
+    });
+  }
+
+  void updateOnlineStatus(bool isOnline) {
+    final user = state.valueOrNull;
+
+    if (user?.driverProfile == null) return;
+    user!.driverProfile!.isOnline = isOnline;
+    state = AsyncData(user);
+  }
+
+  void clearUser() {
+    state = const AsyncData(null);
   }
 }
 
