@@ -249,15 +249,15 @@ final appRouter = GoRouter(
       name: 'chatscreen',
       builder: (context, state) {
         final rideId = state.extra as String;
-
         return ChatScreen(rideId: rideId);
       },
     ),
     GoRoute(
-      path: RouteNames.activeride,
-      name: "driveractiveride",
+      path: RouteNames.driveractiveride,
+      name: 'driveractiveride',
       builder: (context, state) {
-        return const DriverActiveRideScreen();
+        final rideId = state.extra as String?;
+        return DriverActiveRideScreen(rideId: rideId as String);
       },
     ),
     // =========================================================

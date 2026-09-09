@@ -1,5 +1,4 @@
 import 'package:easy_ride/app/models/ride_offer_model.dart';
-import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/ride_history.dart';
 import 'package:easy_ride/app/services/ride_offer_provider.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
@@ -7,7 +6,6 @@ import 'package:easy_ride/app/shared/ride_offer_card.dart';
 import 'package:easy_ride/core/controllers/active_ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum DriverRideTab { requests, history }

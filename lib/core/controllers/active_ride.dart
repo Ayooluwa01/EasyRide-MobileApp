@@ -10,7 +10,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   @override
   Map<String, dynamic>? build() {
     _socket = ref.read(websocketProvider);
-    _socket.on(SocketEvents.rideMatched, _onRideMatched);
     _socket.on(SocketEvents.rideDriverArrived, _onDriverArrived);
     _socket.on(SocketEvents.rideStarted, _onRideStarted);
     _socket.on(SocketEvents.rideDestinationReached, _onDestinationReached);
