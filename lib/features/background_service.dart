@@ -34,7 +34,7 @@ void backgroundOnStart(ServiceInstance service) {
   log(' BACKGROUND SERVICE STARTED');
 
   final websocket = Websocket();
-  DateTime? _lastLocationTime;
+  DateTime? lastLocationTime;
   StreamSubscription<Position>? locationSubscription;
 
   Future<void> startTracking() async {
@@ -61,8 +61,8 @@ void backgroundOnStart(ServiceInstance service) {
               final currtime = DateTime.now();
 
               // if the difference between current and prev is less than 5 secs prev
-              if (_lastLocationTime != null &&
-                  currtime.difference(_lastLocationTime!).inSeconds < 5) {
+              if (lastLocationTime != null &&
+                  currtime.difference(lastLocationTime!).inSeconds < 5) {
                 // log('BACKGROUND: Location throttled');
                 return;
               }
@@ -70,7 +70,7 @@ void backgroundOnStart(ServiceInstance service) {
                 log('BACKGROUND: WebSocket disconnected');
                 return;
               }
-              _lastLocationTime = currtime;
+              lastLocationTime = currtime;
 
               websocket.emit('driver:location', {
                 'lat': position.latitude,

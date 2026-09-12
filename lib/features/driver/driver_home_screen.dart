@@ -39,7 +39,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     if (!mounted) return;
 
     try {
-      developer.log('Checking if driver has any active ride');
       final response = await ref
           .read(apiClientProvider)
           .post(Endpoints.activeRide);
@@ -47,7 +46,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
 
       final ride = responseData['data']?['ride'] as Map<String, dynamic>?;
       final rideId = ride?['id']?.toString();
-      developer.log('Active ride ID: $rideId');
       if (!mounted) return;
       if (rideId != null && rideId.isNotEmpty) {
         context.go(RouteNames.driveractiveride, extra: rideId);

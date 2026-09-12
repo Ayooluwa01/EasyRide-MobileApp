@@ -16,10 +16,8 @@ class DriverOnlineService {
   DriverOnlineService(this.ref);
 
   ApiClient get _apiClient => ref.read(apiClientProvider);
-
   final FlutterBackgroundService _backgroundService =
       FlutterBackgroundService();
-
   Future<bool> toggleOnlineStatus(bool online) async {
     try {
       final response = await _apiClient.patch(
