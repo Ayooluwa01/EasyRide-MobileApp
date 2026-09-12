@@ -1,14 +1,20 @@
+import 'dart:developer' as developer;
+
+import 'package:easy_ride/app/models/ride_history_model.dart';
 import 'package:easy_ride/app/models/ride_offer_model.dart';
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/ride_history.dart';
 import 'package:easy_ride/app/services/ride_offer_provider.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
+import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/shared/ride_offer_card.dart';
 import 'package:easy_ride/core/controllers/active_ride.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_profile_picture/flutter_profile_picture.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 enum DriverRideTab { requests, history }
 
@@ -28,7 +34,7 @@ class _DriverRideHistoryScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ref.read(rideHistoryProvider.notifier).getUserTrips();
+      ref.read(rideHistoryProvider.notifier).getUserTrips();
     });
   }
 
@@ -80,9 +86,15 @@ class _DriverRideHistoryScreenState
     final tripsState = ref.watch(rideHistoryProvider);
     final offers = ref.watch(rideOffersProvider);
     // websocket
-    final websocket = ref.watch(activeRideProvider);
-    final status = websocket?['status'];
-    print('ride offer status $status');
+    ref.listen(activeRideProvider, (previous, next) {
+      final previousStatus = previous?['status'];
+      final nextStatus = next?['status'];
+      if (nextStatus == 'MATCHED' && previousStatus != 'MATCHED') {
+        developer.log("COUNTING RE RENDERING");
+        context.push(RouteNames.driveractiveride, extra: next?['rideId']);
+      }
+    });
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -170,7 +182,7 @@ class _DriverRideHistoryScreenState
   }
 
   Widget _buildHistoryTab(
-    AsyncValue tripsState,
+    AsyncValue<List<RideHistoryModel>> tripsState,
     ColorScheme colorScheme,
     TextStyle interBaseStyle,
   ) {
@@ -198,17 +210,21 @@ class _DriverRideHistoryScreenState
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 20),
-          itemCount: trips.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 14),
-          itemBuilder: (context, index) {
-            // return _TripHistoryCard(
-            //   trip: trips[index],
-            //   interBaseStyle: interBaseStyle,
-            // );
-            return const SizedBox.shrink();
-          },
+        return RefreshIndicator(
+          onRefresh: () =>
+              ref.read(rideHistoryProvider.notifier).getUserTrips(),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 20),
+            itemCount: trips.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 14),
+            itemBuilder: (context, index) {
+              return _TripHistoryCard(
+                trip: trips[index],
+                interBaseStyle: interBaseStyle,
+              );
+            },
+          ),
         );
       },
     );
@@ -556,5 +572,321 @@ class _TabButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ==================================================================
+
+// ==================================================================
+
+class _TripHistoryCard extends StatelessWidget {
+  const _TripHistoryCard({required this.trip, required this.interBaseStyle});
+
+  final RideHistoryModel trip;
+  final TextStyle interBaseStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final isCancelled = trip.status == 'CANCELLED';
+    final tripDate = trip.completedAt ?? trip.cancelledAt ?? trip.requestedAt;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.07),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---- Rider + date + status ----
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatTripDate(tripDate),
+                      style: interBaseStyle.copyWith(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _TripStatusPill(
+                status: trip.status,
+                interBaseStyle: interBaseStyle,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // ---- Route ----
+          _TripRouteRow(
+            pickupAddress: trip.pickupAddress,
+            dropoffAddress: trip.dropoffAddress,
+            colorScheme: colorScheme,
+            interBaseStyle: interBaseStyle,
+          ),
+
+          if (isCancelled && trip.cancellationReason != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              trip.cancelledBy != null
+                  ? 'Cancelled by ${_formatCancelledBy(trip.cancelledBy!)} — ${trip.cancellationReason}'
+                  : 'Cancelled — ${trip.cancellationReason}',
+              style: interBaseStyle.copyWith(
+                fontSize: 12,
+                color: const Color(0xFFEF4444),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: colorScheme.onSurface.withValues(alpha: 0.08),
+          ),
+          const SizedBox(height: 12),
+
+          // ---- Fare + payment + distance ----
+          Row(
+            children: [
+              // Text(
+              //   trip.fareEstimate != null ? formatFare(num.tryParse(trip.fareEstimate)) : '—',
+              //   style: interBaseStyle.copyWith(
+              //     fontSize: 16,
+              //     fontWeight: FontWeight.w800,
+              //     color: colorScheme.onSurface,
+              //   ),
+              // ),
+              // const SizedBox(width: 10),
+              _TripPaymentChip(
+                method: trip.paymentMethod,
+                status: trip.paymentStatus,
+                interBaseStyle: interBaseStyle,
+                colorScheme: colorScheme,
+              ),
+              const Spacer(),
+              if (trip.distanceKm != null)
+                Text(
+                  '${trip.distanceKm!.toStringAsFixed(1)} km',
+                  style: interBaseStyle.copyWith(
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _TripRouteRow({
+  required String pickupAddress,
+  required String dropoffAddress,
+  required ColorScheme colorScheme,
+  required TextStyle interBaseStyle,
+}) {
+  final mutedText = interBaseStyle.copyWith(
+    fontSize: 13,
+    color: colorScheme.onSurface.withValues(alpha: 0.75),
+  );
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Column(
+        children: [
+          Icon(
+            Icons.radio_button_checked,
+            size: 12,
+            color: colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+          Container(
+            width: 1,
+            height: 22,
+            margin: const EdgeInsets.symmetric(vertical: 2),
+            color: colorScheme.onSurface.withValues(alpha: 0.15),
+          ),
+          const Icon(Icons.location_on, size: 12, color: Color(0xFFEF4444)),
+        ],
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              pickupAddress,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: mutedText,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              dropoffAddress,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: mutedText,
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _TripStatusPill({
+  required String status,
+  required TextStyle interBaseStyle,
+}) {
+  final color = _tripStatusColor(status);
+  final label = _tripStatusLabel(status);
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      label,
+      style: interBaseStyle.copyWith(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: color,
+      ),
+    ),
+  );
+}
+
+Widget _TripPaymentChip({
+  required String method,
+  required String status,
+  required TextStyle interBaseStyle,
+  required ColorScheme colorScheme,
+}) {
+  final label =
+      '${_formatPaymentMethod(method)} · ${_formatPaymentStatus(status)}';
+  final color = _paymentStatusColor(status);
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: colorScheme.onSurface.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: interBaseStyle.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+String _formatTripDate(DateTime date) {
+  return DateFormat('MMM d, yyyy · h:mm a').format(date.toLocal());
+}
+
+String _formatCancelledBy(String cancelledBy) {
+  switch (cancelledBy) {
+    case 'RIDER':
+      return 'rider';
+    case 'DRIVER':
+      return 'you';
+    case 'ADMIN':
+      return 'support';
+    default:
+      return cancelledBy.toLowerCase();
+  }
+}
+
+String _tripStatusLabel(String status) {
+  switch (status) {
+    case 'COMPLETED':
+      return 'Completed';
+    case 'CANCELLED':
+      return 'Cancelled';
+    default:
+      return status;
+  }
+}
+
+Color _tripStatusColor(String status) {
+  switch (status) {
+    case 'COMPLETED':
+      return const Color(0xFF22C55E);
+    case 'CANCELLED':
+      return const Color(0xFFEF4444);
+    default:
+      return const Color(0xFFF59E0B);
+  }
+}
+
+String _formatPaymentMethod(String method) {
+  switch (method) {
+    case 'CASH':
+      return 'Cash';
+    case 'CARD':
+      return 'Card';
+    case 'TRANSFER':
+      return 'Transfer';
+    default:
+      return method;
+  }
+}
+
+String _formatPaymentStatus(String status) {
+  switch (status) {
+    case 'PAID':
+      return 'Paid';
+    case 'PENDING':
+      return 'Pending';
+    case 'FAILED':
+      return 'Failed';
+    default:
+      return status;
+  }
+}
+
+Color _paymentStatusColor(String status) {
+  switch (status) {
+    case 'PAID':
+      return const Color(0xFF22C55E);
+    case 'FAILED':
+      return const Color(0xFFEF4444);
+    case 'PENDING':
+    default:
+      return const Color(0xFFF59E0B);
   }
 }

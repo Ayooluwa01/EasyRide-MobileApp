@@ -56,7 +56,7 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
 
   bool _mapReady = false;
   bool _disposed = false;
-  bool _hasCenteredOnDriver = false;
+  final bool _hasCenteredOnDriver = false;
 
   @override
   void initState() {

@@ -4,7 +4,6 @@ import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/models/ride_offer_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class RideOffersNotifier
     extends AutoDisposeAsyncNotifier<List<RideOfferModel>> {

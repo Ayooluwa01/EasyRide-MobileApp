@@ -10,7 +10,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   @override
   Map<String, dynamic>? build() {
     _socket = ref.read(websocketProvider);
-    _socket.on(SocketEvents.rideMatched, _onRideMatched);
     _socket.on(SocketEvents.rideDriverArrived, _onDriverArrived);
     _socket.on(SocketEvents.rideStarted, _onRideStarted);
     _socket.on(SocketEvents.rideDestinationReached, _onDestinationReached);
@@ -58,7 +57,7 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
     if (data is! Map) return;
     final incoming = Map<String, dynamic>.from(data);
     state = {...?state, ...incoming};
-    developer.log('RIDE MATCHED: $incoming', name: 'ActiveRide');
+    developer.log('RIDE MATCHED new state: $state', name: 'ActiveRide');
   }
 
   // ============================================================
@@ -66,8 +65,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
   // ============================================================
 
   void _onDriverArrived(dynamic data) {
-    developer.log('DRIVER ARRIVED: $data', name: 'ActiveRide');
-
     if (data is! Map) return;
     final incoming = Map<String, dynamic>.from(data);
     if (!_belongsToCurrentRide(incoming)) {
@@ -106,7 +103,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
       'destinationReached': true,
       'status': 'DESTINATION_REACHED',
     };
-    developer.log('DESTINATION REACHED', name: 'ActiveRide');
   }
 
   // ============================================================
@@ -159,8 +155,6 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
         'accuracy': incoming['accuracy'],
       },
     };
-
-    print("NEW DRIVER LOCATION UPDATE");
   }
 
   bool _belongsToCurrentRide(Map<String, dynamic> data) {

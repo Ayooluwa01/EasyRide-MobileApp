@@ -1,12 +1,17 @@
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:easy_ride/app/api/client.dart';
+import 'package:easy_ride/app/api/endpoints.dart';
+import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/check_active_ride.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -25,6 +30,36 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
   final syneBaseStyle = GoogleFonts.syne(height: 1.15);
 
   @override
+  void initState() {
+    super.initState();
+    _initializeHome();
+  }
+
+  Future<void> _initializeHome() async {
+    if (!mounted) return;
+
+    try {
+      final response = await ref
+          .read(apiClientProvider)
+          .post(Endpoints.activeRide);
+      final responseData = response.data as Map<String, dynamic>;
+
+      final ride = responseData['data']?['ride'] as Map<String, dynamic>?;
+      final rideId = ride?['id']?.toString();
+      if (!mounted) return;
+      if (rideId != null && rideId.isNotEmpty) {
+        context.go(RouteNames.driveractiveride, extra: rideId);
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to check active ride',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final userState = ref.watch(currentUserProvider);
     final user = userState.value;
@@ -39,6 +74,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         ? LatLng(userLatLng.latitude, userLatLng.longitude)
         : _target;
     final driverPhotoUrl = profile?.driverPhotoUrl ?? user?.profilePhotoUrl;
+
+    // animate map as user location changes
     ref.listen(userLatLngProvider, (previous, next) {
       if (next != null && _controller != null) {
         _controller!.animateCamera(
@@ -113,12 +150,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                           .toggleOnlineStatus(value);
                     } catch (e) {
                       if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to update online status'),
-                        ),
-                      );
                     }
                   },
                   colorScheme: colorScheme,
@@ -737,7 +768,7 @@ class _RideOffersState extends State<_RideOffers> {
     final buffer = StringBuffer();
     for (int i = 0; i < s.length; i++) {
       final posFromRight = s.length - i;
-      buffer.write(s[i]);
+      // buffer.write(s[i]);
       if (posFromRight > 1 && posFromRight % 3 == 1) buffer.write(',');
     }
     return buffer.toString();

@@ -47,7 +47,7 @@ class Websocket {
           .setTransports(['websocket'])
           .setExtraHeaders({'Authorization': 'Bearer $accessToken'})
           .enableReconnection()
-          .setReconnectionAttempts(10)
+          .setReconnectionAttempts(20)
           .setReconnectionDelay(1000)
           .setReconnectionDelayMax(5000)
           .setTimeout(10000)
