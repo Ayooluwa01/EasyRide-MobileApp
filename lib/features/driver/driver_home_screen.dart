@@ -1,10 +1,11 @@
+// ignore_for_file: unused_element_parameter
+
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/router/route_names.dart';
-import 'package:easy_ride/app/services/check_active_ride.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
@@ -113,7 +114,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            user?.fullName ?? '?',
+                            user?.fullName ?? '',
                             style: syneBaseStyle.copyWith(
                               fontSize: 30,
                               fontWeight: FontWeight.w800,
@@ -640,75 +641,75 @@ class _StatCard extends StatelessWidget {
 // QUICK ACTION CARD
 // ==================================================================
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.accent,
-    required this.colorScheme,
-    required this.isDark,
-    required this.interBaseStyle,
-    required this.onTap,
-  });
+// class _QuickActionCard extends StatelessWidget {
+//   const _QuickActionCard({
+//     required this.icon,
+//     required this.label,
+//     required this.accent,
+//     required this.colorScheme,
+//     required this.isDark,
+//     required this.interBaseStyle,
+//     required this.onTap,
+//   });
 
-  final IconData icon;
-  final String label;
-  final Color accent;
-  final ColorScheme colorScheme;
-  final bool isDark;
-  final TextStyle interBaseStyle;
-  final VoidCallback onTap;
+//   final IconData icon;
+//   final String label;
+//   final Color accent;
+//   final ColorScheme colorScheme;
+//   final bool isDark;
+//   final TextStyle interBaseStyle;
+//   final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.transparent
-                    : Colors.black.withValues(alpha: 0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 19, color: accent),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: interBaseStyle.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Material(
+//       color: colorScheme.surface,
+//       borderRadius: BorderRadius.circular(18),
+//       child: InkWell(
+//         borderRadius: BorderRadius.circular(18),
+//         onTap: onTap,
+//         child: Container(
+//           padding: const EdgeInsets.all(16),
+//           decoration: BoxDecoration(
+//             borderRadius: BorderRadius.circular(18),
+//             boxShadow: [
+//               BoxShadow(
+//                 color: isDark
+//                     ? Colors.transparent
+//                     : Colors.black.withValues(alpha: 0.03),
+//                 blurRadius: 12,
+//                 offset: const Offset(0, 4),
+//               ),
+//             ],
+//           ),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Container(
+//                 width: 38,
+//                 height: 38,
+//                 decoration: BoxDecoration(
+//                   color: accent.withValues(alpha: 0.14),
+//                   borderRadius: BorderRadius.circular(12),
+//                 ),
+//                 child: Icon(icon, size: 19, color: accent),
+//               ),
+//               const SizedBox(height: 12),
+//               Text(
+//                 label,
+//                 style: interBaseStyle.copyWith(
+//                   fontSize: 13,
+//                   fontWeight: FontWeight.w700,
+//                   color: colorScheme.onSurface,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // ==================================================================
 // RIDE OFFER CARD — swipe left to decline, tap button to accept
@@ -1086,43 +1087,43 @@ class _RideOffersState extends State<_RideOffers> {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.colorScheme,
-  });
+// class _InfoChip extends StatelessWidget {
+//   const _InfoChip({
+//     required this.icon,
+//     required this.label,
+//     required this.colorScheme,
+//   });
 
-  final IconData icon;
-  final String label;
-  final ColorScheme colorScheme;
+//   final IconData icon;
+//   final String label;
+//   final ColorScheme colorScheme;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+//       decoration: BoxDecoration(
+//         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+//         borderRadius: BorderRadius.circular(10),
+//       ),
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+//           const SizedBox(width: 4),
+//           Text(
+//             label,
+//             style: TextStyle(
+//               fontSize: 12.5,
+//               fontWeight: FontWeight.w600,
+//               color: colorScheme.onSurfaceVariant,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class _StepperButton extends StatelessWidget {
   const _StepperButton({

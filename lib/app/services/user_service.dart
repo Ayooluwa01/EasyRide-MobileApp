@@ -26,7 +26,6 @@ class UserService {
         error: e,
         stackTrace: stackTrace,
       );
-
       rethrow;
     }
   }

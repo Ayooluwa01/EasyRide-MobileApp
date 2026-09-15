@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: unused_field, non_constant_identifier_names
 
 import 'dart:async';
 import 'dart:developer' as developer;
@@ -170,6 +170,7 @@ class _ActiveRideScreenState extends ConsumerState<ActiveRideScreen> {
               riderIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           anchor: const Offset(0.5, 0.5),
+          // ignore: deprecated_member_use
           zIndex: 2,
         ),
       );

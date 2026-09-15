@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
@@ -17,10 +16,8 @@ class RideHistory extends AsyncNotifier<List<RideHistoryModel>> {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
-      developer.log('FETCHING RIDE HISTORY', name: 'RideHistory');
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get(Endpoints.rides);
-
       final parsed = RideHistoryResponse.fromJson(
         Map<String, dynamic>.from(response.data),
       );

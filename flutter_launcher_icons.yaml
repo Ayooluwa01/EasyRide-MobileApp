@@ -1,0 +1,31 @@
+flutter_launcher_icons:
+  # Default paths (used if platform-specific path is missing)
+  image_path: "assets/logo.png"
+
+  # Android configuration
+  android: "launcher_icon"
+  image_path_android: "assets/logo.png"
+  min_sdk_android: 21 
+
+  # iOS configuration
+  ios: true
+  image_path_ios: "assets/logo.png"
+  remove_alpha_channel_ios: true # Required by Apple App Store
+
+  # Web configuration
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+    background_color: "#FFFFFF" # Change to match your brand background
+    theme_color: "#000000"      # Change to match your brand accent color
+
+  # Windows configuration
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+    icon_size: 48 
+
+  # macOS configuration
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
