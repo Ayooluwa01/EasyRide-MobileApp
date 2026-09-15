@@ -3,15 +3,24 @@ import 'dart:developer' as developer;
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/models/ride_offer_model.dart';
+import 'package:easy_ride/app/services/websocket.dart';
+import 'package:easy_ride/core/socket/socket_events.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RideOffersNotifier
     extends AutoDisposeAsyncNotifier<List<RideOfferModel>> {
   late final ApiClient _apiClient;
+  late final Websocket _socket;
 
   @override
   Future<List<RideOfferModel>> build() async {
     _apiClient = ref.read(apiClientProvider);
+    _socket = ref.read(websocketProvider);
+
+    _socket.on(SocketEvents.rideNew, _newRequest);
+    ref.onDispose(() {
+      _socket.off(SocketEvents.rideNew, _newRequest);
+    });
     return getActiveRideRequests();
   }
 
@@ -103,6 +112,31 @@ class RideOffersNotifier
       return false;
     }
   }
+
+  // WEBSOCKET
+  void _newRequest(dynamic data) {
+    try {
+      final offer = RideOfferModel.fromJson(data as Map<String, dynamic>);
+      developer.log('NEW OFFER: ${offer.rideId}', name: 'RideOffersNotifier');
+      final currentOffers = state.valueOrNull ?? [];
+      final exists = currentOffers.any((item) => item.rideId == offer.rideId);
+      if (exists) {
+        developer.log("OFFER EXTITS");
+        return;
+      }
+
+      state = AsyncData([offer, ...currentOffers]);
+    } catch (e, stackTrace) {
+      developer.log(
+        'FAILED TO PROCESS NEW RIDE REQUEST',
+        name: 'RideOffersNotifier',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  //
 }
 
 final rideOffersProvider =

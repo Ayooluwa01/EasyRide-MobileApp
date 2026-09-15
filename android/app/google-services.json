@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838019101943",
+    "project_id": "easyride-94dc3",
+    "storage_bucket": "easyride-94dc3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838019101943:android:c7055eece9404fb7638ff2",
+        "android_client_info": {
+          "package_name": "com.aytech.easyride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBU6yTdRxhdACvqYOAyoyA7h_6LItKYjko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

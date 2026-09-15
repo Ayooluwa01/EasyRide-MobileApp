@@ -59,9 +59,10 @@ class UserController extends AsyncNotifier<User?> {
       }
 
       return user;
-    } catch (e, stackTrace) {
-      throw AsyncError(e, stackTrace);
+    } catch (e) {
+      // throw AsyncError(e, stackTrace);
     }
+    return null;
   }
 
   Future<void> refreshUser() async {

@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:developer' as developer;
 
 import 'package:easy_ride/app/models/ride_history_model.dart';
@@ -6,11 +8,10 @@ import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/ride_history.dart';
 import 'package:easy_ride/app/services/ride_offer_provider.dart';
 import 'package:easy_ride/app/shared/app_activity_provider.dart';
-import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/shared/ride_offer_card.dart';
 import 'package:easy_ride/core/controllers/active_ride.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_profile_picture/flutter_profile_picture.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,27 +51,12 @@ class _DriverRideHistoryScreenState
           .showSuccess("OFFER SENT SUCCESSFULLY");
       return;
     }
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This ride is no longer available')),
-      );
-    }
   }
 
   void _rejectOffer(RideOfferModel offer) async {
-    final success = await ref
-        .read(rideOffersProvider.notifier)
-        .rejectOffer(offer.rideId);
+    await ref.read(rideOffersProvider.notifier).rejectOffer(offer.rideId);
 
     if (!mounted) return;
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
-        ),
-      );
-    }
   }
 
   @override
@@ -90,7 +76,6 @@ class _DriverRideHistoryScreenState
       final previousStatus = previous?['status'];
       final nextStatus = next?['status'];
       if (nextStatus == 'MATCHED' && previousStatus != 'MATCHED') {
-        developer.log("COUNTING RE RENDERING");
         context.push(RouteNames.driveractiveride, extra: next?['rideId']);
       }
     });
@@ -105,21 +90,38 @@ class _DriverRideHistoryScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Rides',
-                style: syneBaseStyle.copyWith(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
-                ),
-              ),
+                    'Rides',
+                    style: syneBaseStyle.copyWith(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(duration: 350.ms)
+                  .slideY(
+                    begin: -0.2,
+                    end: 0,
+                    duration: 350.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
               const SizedBox(height: 20),
 
               _DriverRideTopbar(
-                selected: _selectedTab,
-                requestCount: offers.valueOrNull?.length ?? 0,
-                onChanged: (tab) => setState(() => _selectedTab = tab),
-                interBaseStyle: interBaseStyle,
-              ),
+                    selected: _selectedTab,
+                    requestCount: offers.valueOrNull?.length ?? 0,
+                    onChanged: (tab) => setState(() => _selectedTab = tab),
+                    interBaseStyle: interBaseStyle,
+                  )
+                  .animate()
+                  .fadeIn(delay: 100.ms, duration: 350.ms)
+                  .slideY(
+                    begin: -0.15,
+                    end: 0,
+                    delay: 100.ms,
+                    duration: 350.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
               const SizedBox(height: 20),
 
               Expanded(
@@ -167,13 +169,22 @@ class _DriverRideHistoryScreenState
               final offer = offers[index];
 
               return RideOfferCard(
-                key: ValueKey(offer.rideId),
-                offer: offer,
-                isOnline: true,
-                onAccept: (counterOfferAmount) =>
-                    _acceptOffer(offer, counterOfferAmount),
-                onReject: () => _rejectOffer(offer),
-              );
+                    key: ValueKey(offer.rideId),
+                    offer: offer,
+                    isOnline: true,
+                    onAccept: (counterOfferAmount) =>
+                        _acceptOffer(offer, counterOfferAmount),
+                    onReject: () => _rejectOffer(offer),
+                  )
+                  .animate()
+                  .fadeIn(delay: (60 * index).ms, duration: 300.ms)
+                  .slideY(
+                    begin: 0.08,
+                    end: 0,
+                    delay: (60 * index).ms,
+                    duration: 300.ms,
+                    curve: Curves.easeOutCubic,
+                  );
             },
           ),
         );
@@ -220,9 +231,18 @@ class _DriverRideHistoryScreenState
             separatorBuilder: (context, index) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
               return _TripHistoryCard(
-                trip: trips[index],
-                interBaseStyle: interBaseStyle,
-              );
+                    trip: trips[index],
+                    interBaseStyle: interBaseStyle,
+                  )
+                  .animate()
+                  .fadeIn(delay: (60 * index).ms, duration: 300.ms)
+                  .slideY(
+                    begin: 0.08,
+                    end: 0,
+                    delay: (60 * index).ms,
+                    duration: 300.ms,
+                    curve: Curves.easeOutCubic,
+                  );
             },
           ),
         );
