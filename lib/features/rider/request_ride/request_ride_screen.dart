@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/models/mapbox_location_model.dart';
 import 'package:easy_ride/app/models/request_ride_model.dart';
 import 'package:easy_ride/app/services/request_ride.dart';
 import 'package:easy_ride/app/services/route_service.dart';
 import 'package:easy_ride/app/services/suggestions_service.dart';
+import 'package:easy_ride/app/services/websocket.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:easy_ride/core/controllers/driver_offers.dart';
 import 'package:easy_ride/core/controllers/nearby_drivers.dart';
@@ -20,7 +22,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 part 'request_ride_logic.dart';
 
 class RequestRideScreen extends ConsumerStatefulWidget {
-  const RequestRideScreen({super.key});
+  final String? resumeRideId;
+  const RequestRideScreen({super.key, this.resumeRideId});
 
   @override
   ConsumerState<RequestRideScreen> createState() => _RequestRideScreenState();
@@ -28,6 +31,7 @@ class RequestRideScreen extends ConsumerStatefulWidget {
 
 class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   GoogleMapController? _mapController;
+  late final Websocket _socket;
 
   final Set<Marker> _pickupMarkers = {};
   final Set<Marker> _destMarkers = {};
@@ -57,8 +61,65 @@ class _RequestRideScreenState extends ConsumerState<RequestRideScreen> {
   static const double _fallbackLat = 6.5244;
   static const double _fallbackLng = 3.3792;
 
+  Future<void> _resumeSearch(String rideId) async {
+    setState(() {
+      _rideId = rideId;
+      _searchNearbyDrivers = true;
+    });
+    print("Resuming offer search");
+    ref.read(driverOfferProvider.notifier).setRide(rideId);
+    await _syncPendingOffers(rideId);
+  }
+
+  void _onSocketReconnected(dynamic _) {
+    final rideId = _rideId;
+    if (rideId == null || !_searchNearbyDrivers) return;
+    _syncPendingOffers(rideId);
+  }
+
+  Future<void> _syncPendingOffers(String rideId) async {
+    try {
+      final response = await ref
+          .read(apiClientProvider)
+          .get('/rides/$rideId/driver-offers');
+
+      developer.log("ACTIVE OFFERS ${response.data}");
+      final List<dynamic> offers = response.data['data'] ?? [];
+      developer.log(
+        'Synced ${offers.length} pending offers',
+        name: 'RequestRide',
+      );
+
+      // Hand off to driverOfferProvider so it merges with/replaces
+      // whatever it already has — exact method depends on that
+      // notifier's API (e.g. a hydrate()/setOffers() method).
+      // ref.read(driverOfferProvider.notifier).hydrate(offers);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to sync pending offers',
+        name: 'RequestRide',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _socket = ref.read(websocketProvider);
+    _socket.on('connect', _onSocketReconnected);
+    developer.log("RIDE ID:${widget.resumeRideId}");
+    if (widget.resumeRideId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _resumeSearch(widget.resumeRideId!);
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _socket.off('connect', _onSocketReconnected);
     _destinationController.dispose();
     _destinationFocusNode.dispose();
     _debounceTimer?.cancel();

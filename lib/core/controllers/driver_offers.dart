@@ -74,6 +74,12 @@ class DriverOffers extends Notifier<List<dynamic>> {
     final driverOfferService = ref.read(acceptOfferProvider);
     await driverOfferService.rejectOffer(rideId, driverId);
   }
+
+  Future<void> hydrate(dynamic offers) async {
+    developer.log("HYDRATING OFFER,$offers");
+
+    // state = [...state, offers];
+  }
 }
 
 final driverOfferProvider = NotifierProvider<DriverOffers, List<dynamic>>(

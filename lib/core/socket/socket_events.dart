@@ -15,6 +15,8 @@ abstract class SocketEvents {
   static const String rideDestinationReached = 'ride:destination-reached';
   static const String nearbyDrivers = 'nearby:drivers';
   static const String driverOffers = 'ride:offers';
+  static const rideOfferRemoved = 'ride:offer-removed';
+
   // Chat
   static const String messageNew = 'message:new';
 }

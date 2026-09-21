@@ -225,7 +225,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/requestride',
       builder: (context, state) {
-        return const RequestRideScreen();
+        final rideId = state.extra as String?;
+        return RequestRideScreen(resumeRideId: rideId);
       },
     ),
 
@@ -292,18 +293,17 @@ final appRouter = GoRouter(
           ],
         ),
 
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: RouteNames.driverchat,
-              name: 'driverearnings',
-              builder: (context, state) {
-                return const Placeholder();
-              },
-            ),
-          ],
-        ),
-
+        // StatefulShellBranch(
+        //   routes: [
+        //     GoRoute(
+        //       path: RouteNames.driverchat,
+        //       name: 'driverearnings',
+        //       builder: (context, state) {
+        //         return const Placeholder();
+        //       },
+        //     ),
+        //   ],
+        // ),
         StatefulShellBranch(
           routes: [
             GoRoute(

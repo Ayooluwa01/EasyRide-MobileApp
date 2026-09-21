@@ -43,7 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void goBack() {
     if (context.canPop()) {
-      ref.read(themeProvider.notifier).toggleTheme();
+      // ref.read(themeProvider.notifier).toggleTheme();
       context.pop();
     }
   }

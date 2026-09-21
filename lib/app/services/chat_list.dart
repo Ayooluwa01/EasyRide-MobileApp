@@ -21,8 +21,6 @@ class ChatList extends AsyncNotifier<ChatListModel> {
     try {
       final response = await apiClient.get('/chat/me');
 
-      developer.log('CHAT LIST ${response.data}', name: 'ChatList');
-
       final chatList = ChatListModel.fromJson(response.data);
 
       state = AsyncData(chatList);

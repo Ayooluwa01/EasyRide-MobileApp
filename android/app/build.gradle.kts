@@ -1,24 +1,26 @@
 // plugins {
 //     id("com.android.application")
-//     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+//     id("com.google.gms.google-services")
 //     id("dev.flutter.flutter-gradle-plugin")
 // }
 
 // android {
 //     namespace = "com.aytech.easyride"
-//     compileSdk = flutter.
+    
+//     // Bumped to 37 to resolve permission_handler requirements
+//     compileSdk = 37
 //     ndkVersion = flutter.ndkVersion
 
 //     compileOptions {
+//         // ✅ 1. Enable Core Library Desugaring flag
+//         isCoreLibraryDesugaringEnabled = true
+        
 //         sourceCompatibility = JavaVersion.VERSION_17
 //         targetCompatibility = JavaVersion.VERSION_17
 //     }
 
 //     defaultConfig {
-//         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
 //         applicationId = "com.aytech.easyride"
-//         // You can update the following values to match your application needs.
-//         // For more information, see: https://flutter.dev/to/review-gradle-config.
 //         minSdk = flutter.minSdkVersion
 //         targetSdk = flutter.targetSdkVersion
 //         versionCode = flutter.versionCode
@@ -27,8 +29,6 @@
 
 //     buildTypes {
 //         release {
-//             // TODO: Add your own signing config for the release build.
-//             // Signing with the debug keys for now, so `flutter run --release` works.
 //             signingConfig = signingConfigs.getByName("debug")
 //         }
 //     }
@@ -43,21 +43,26 @@
 // flutter {
 //     source = "../.."
 // }
+
+// // ✅ 2. Inject the desugaring engine dependency required by flutter_local_notifications
+// dependencies {
+//     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+// }
+
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.aytech.easyride"
     
-    compileSdk =36
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -65,11 +70,11 @@ android {
     defaultConfig {
         applicationId = "com.aytech.easyride"
         minSdk = flutter.minSdkVersion
-        
-        // FIXED: Hardcoded to match the compilation environment targeting level 35
-        targetSdk =flutter.targetSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["mapsApiKey"] = "YAIzaSyDiVFbR5x5ApuMzqy2QJeeIoPjsD1vKwtY"
     }
 
     buildTypes {
@@ -87,4 +92,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }

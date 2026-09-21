@@ -38,6 +38,22 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     });
   }
 
+  // Future<void> _initializeHome() async {
+  //   if (!mounted) return;
+
+  //   try {
+  //     final activeRide = await ref
+  //         .read(checkActiveRideProvider)
+  //         .checkActiveRideForRider();
+  //     if (!mounted) return;
+
+  //     if (activeRide?.id != null) {
+  //       context.go(RouteNames.activeride, extra: activeRide?.id);
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Failed to check active ride: $e');
+  //   }
+  // }
   Future<void> _initializeHome() async {
     if (!mounted) return;
 
@@ -47,9 +63,19 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
           .checkActiveRideForRider();
       if (!mounted) return;
 
-      if (activeRide?.id != null) {
-        context.go(RouteNames.activeride, extra: activeRide?.id);
+      if (activeRide?.id == null) return;
+
+      final status = activeRide?.status;
+
+      // Still waiting for a driver to accept — resume the search
+      // screen, not the driver-en-route screen.
+      if (status == 'REQUESTED' || status == 'DRIVER_SELECTED') {
+        context.go(RouteNames.requestride, extra: activeRide?.id);
+        return;
       }
+
+      // Driver matched or further along — resume the active-ride screen.
+      context.go(RouteNames.activeride, extra: activeRide?.id);
     } catch (e) {
       debugPrint('Failed to check active ride: $e');
     }
