@@ -18,8 +18,11 @@ class RideOffersNotifier
     _socket = ref.read(websocketProvider);
 
     _socket.on(SocketEvents.rideNew, _newRequest);
+    _socket.on(SocketEvents.rideOfferRemoved, _offerRemoved);
+
     ref.onDispose(() {
       _socket.off(SocketEvents.rideNew, _newRequest);
+      _socket.on(SocketEvents.rideOfferRemoved, _offerRemoved);
     });
     return getActiveRideRequests();
   }
@@ -137,6 +140,17 @@ class RideOffersNotifier
   }
 
   //
+  void _offerRemoved(dynamic data) {
+    if (data is! Map) return;
+    final rideId = data['rideId'] as String?;
+    if (rideId == null) return;
+
+    developer.log(
+      'OFFER REMOVED (cancelled): $rideId',
+      name: 'RideOffersNotifier',
+    );
+    removeOffer(rideId);
+  }
 }
 
 final rideOffersProvider =

@@ -650,13 +650,15 @@ class AvailableDrivers extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '$displayCount DRIVERS NEARBY',
-                style: GoogleFonts.syne(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                  color: colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  'SCANNING FOR NEARBY DRIVERS  ',
+                  style: GoogleFonts.syne(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               Row(

@@ -132,7 +132,12 @@ class ActiveRideNotifier extends Notifier<Map<String, dynamic>?> {
     }
 
     developer.log('RIDE CANCELLED', name: 'ActiveRide');
-    state = null;
+    state = {
+      ...?state,
+      'status': 'CANCELLED',
+      'cancelledBy': incoming['cancelledBy'],
+      'reason': incoming['reason'],
+    };
   }
 
   // ============================================================

@@ -1,7 +1,5 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'dart:developer' as developer;
-
 import 'package:easy_ride/app/models/ride_history_model.dart';
 import 'package:easy_ride/app/models/ride_offer_model.dart';
 import 'package:easy_ride/app/router/route_names.dart';
@@ -31,11 +29,49 @@ class _DriverRideHistoryScreenState
     extends ConsumerState<DriverRideHistoryScreen> {
   DriverRideTab _selectedTab = DriverRideTab.requests;
 
+  /// Rides we've already navigated to. Keyed by rideId, NOT by status
+  /// transition — this is what stops the push loop when the socket
+  /// re-emits `ride:matched` or the state map is rebuilt.
+  String? _navigatedRideId;
+
+  /// Guards against a second push while a navigation is already in flight.
+  bool _isNavigating = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(rideHistoryProvider.notifier).getUserTrips();
+    });
+  }
+
+  void _handleActiveRideChange(Map<String, dynamic>? next) {
+    if (next == null) return;
+
+    final status = next['status'] as String?;
+    if (status != 'MATCHED') return;
+
+    final rideId = (next['rideId'] ?? next['id'])?.toString();
+    if (rideId == null) return;
+
+    // Already opened the active-ride screen for this ride.
+    if (_navigatedRideId == rideId) return;
+    if (_isNavigating) return;
+
+    _navigatedRideId = rideId;
+    _isNavigating = true;
+
+    // Listener callbacks can fire mid-build; defer the push a frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _isNavigating = false;
+        return;
+      }
+      try {
+        await context.push(RouteNames.driveractiveride, extra: rideId);
+      } finally {
+        _isNavigating = false;
+      }
     });
   }
 
@@ -71,13 +107,10 @@ class _DriverRideHistoryScreenState
     final interBaseStyle = GoogleFonts.inter();
     final tripsState = ref.watch(rideHistoryProvider);
     final offers = ref.watch(rideOffersProvider);
+
     // websocket
-    ref.listen(activeRideProvider, (previous, next) {
-      final previousStatus = previous?['status'];
-      final nextStatus = next?['status'];
-      if (nextStatus == 'MATCHED' && previousStatus != 'MATCHED') {
-        context.push(RouteNames.driveractiveride, extra: next?['rideId']);
-      }
+    ref.listen<Map<String, dynamic>?>(activeRideProvider, (previous, next) {
+      _handleActiveRideChange(next);
     });
 
     return Scaffold(
@@ -685,15 +718,6 @@ class _TripHistoryCard extends StatelessWidget {
           // ---- Fare + payment + distance ----
           Row(
             children: [
-              // Text(
-              //   trip.fareEstimate != null ? formatFare(num.tryParse(trip.fareEstimate)) : '—',
-              //   style: interBaseStyle.copyWith(
-              //     fontSize: 16,
-              //     fontWeight: FontWeight.w800,
-              //     color: colorScheme.onSurface,
-              //   ),
-              // ),
-              // const SizedBox(width: 10),
               _TripPaymentChip(
                 method: trip.paymentMethod,
                 status: trip.paymentStatus,

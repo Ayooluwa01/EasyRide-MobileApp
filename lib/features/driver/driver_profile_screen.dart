@@ -1,4 +1,5 @@
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/biometric_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/number_formatter.dart';
 import 'package:easy_ride/app/shared/storage_keys.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:local_auth/local_auth.dart';
 
 class DriverProfileScreen extends ConsumerStatefulWidget {
   const DriverProfileScreen({super.key});
@@ -20,10 +22,10 @@ class DriverProfileScreen extends ConsumerStatefulWidget {
 
 class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
   bool _biometricsEnabled = false;
-
-  // TODO: replace with a real provider watching the driver's wallet balance
+  final BiometricService _biometricService = BiometricService();
   num _walletBalance = 12500;
-
+  bool? _isbiometricsSupported;
+  List<BiometricType>? _availableBiometrics;
   Future<void> _openTopUpSheet() async {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -37,9 +39,24 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
     );
 
     if (result != null && result > 0) {
-      // TODO: call your top-up API here, then refresh the real balance
       setState(() => _walletBalance += result);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSupportAndTypes();
+  }
+
+  Future<void> _checkSupportAndTypes() async {
+    final isSupported = await _biometricService.isDeviceSupported();
+    final biometrics = await _biometricService.getAvailableBiometrics();
+
+    setState(() {
+      _isbiometricsSupported = isSupported;
+      _availableBiometrics = biometrics;
+    });
   }
 
   @override
@@ -278,25 +295,33 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
                     indent: 48,
                     color: dividerColor,
                   ),
-                  OptionTile(
-                    icon: Icons.fingerprint_rounded,
-                    label: "Biometric Login",
-                    trailing: Switch(
-                      value: _biometricsEnabled,
-                      onChanged: (v) {
-                        setState(() => _biometricsEnabled = v);
-                      },
-                      activeThumbColor: Colors.white,
-                      activeTrackColor: const Color(0xFF2ED47A),
-                      inactiveThumbColor: Colors.white,
-                      inactiveTrackColor: colorScheme.onSurface.withValues(
-                        alpha: 0.2,
-                      ),
-                      trackOutlineColor: WidgetStateProperty.all(
-                        Colors.transparent,
+                  if (_isbiometricsSupported == true &&
+                      (_availableBiometrics?.any(
+                            (type) =>
+                                type == BiometricType.fingerprint ||
+                                type == BiometricType.face,
+                          ) ??
+                          false)) ...[
+                    OptionTile(
+                      icon: Icons.fingerprint_rounded,
+                      label: "Biometric Login",
+                      trailing: Switch(
+                        value: _biometricsEnabled,
+                        onChanged: (v) {
+                          setState(() => _biometricsEnabled = v);
+                        },
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: const Color(0xFF2ED47A),
+                        inactiveThumbColor: Colors.white,
+                        inactiveTrackColor: colorScheme.onSurface.withValues(
+                          alpha: 0.2,
+                        ),
+                        trackOutlineColor: WidgetStateProperty.all(
+                          Colors.transparent,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
               const SizedBox(height: 24),

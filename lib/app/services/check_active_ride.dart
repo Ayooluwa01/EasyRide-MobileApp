@@ -17,7 +17,6 @@ class _CheckActiveRide {
   Future<RiderActiveRideModel?> checkActiveRideForRider() async {
     try {
       final response = await _apiClient.post(Endpoints.activeRide);
-      developer.log('Check active ride for rider response: ${response.data}');
       final data = response.data;
       // No active ride
       if (data == null) {
@@ -26,7 +25,6 @@ class _CheckActiveRide {
 
       return RiderActiveRideModel.fromJson(data as Map<String, dynamic>);
     } catch (e, stackTrace) {
-      developer.log('Check active ride error: $e', stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -34,7 +32,6 @@ class _CheckActiveRide {
   // Check active ride for driver
   Future<DriverActiveRideModel> checkActiveRideForDriver() async {
     final response = await _apiClient.post(Endpoints.activeRide);
-    developer.log('Check active ride for driver response: ${response.data}');
     return DriverActiveRideModel.fromJson(response.data);
   }
 }

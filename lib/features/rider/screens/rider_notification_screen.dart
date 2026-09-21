@@ -70,43 +70,43 @@ class _NotificationSettingsState extends State<NotificationSettings> {
 
               _NotificationTile(
                 icon: Icons.directions_car_filled_outlined,
-                title: "Ride Updates",
-                subtitle: "Arrived, started, finished",
+                title: "Push Notification",
+                subtitle: "Enable push notification",
                 value: _rideUpdates,
                 onChanged: (v) => setState(() => _rideUpdates = v),
               ),
-              const SizedBox(height: 12),
-              _NotificationTile(
-                icon: Icons.local_offer_outlined,
-                title: "Promotions",
-                subtitle: "Discounts and offers",
-                value: _promotions,
-                onChanged: (v) => setState(() => _promotions = v),
-              ),
-              const SizedBox(height: 12),
-              _NotificationTile(
-                icon: Icons.chat_bubble_outline,
-                title: "Messages",
-                subtitle: "New chat alerts",
-                value: _messages,
-                onChanged: (v) => setState(() => _messages = v),
-              ),
+              // const SizedBox(height: 12),
+              // _NotificationTile(
+              //   icon: Icons.local_offer_outlined,
+              //   title: "Promotions",
+              //   subtitle: "Discounts and offers",
+              //   value: _promotions,
+              //   onChanged: (v) => setState(() => _promotions = v),
+              // ),
+              // const SizedBox(height: 12),
+              // _NotificationTile(
+              //   icon: Icons.chat_bubble_outline,
+              //   title: "Messages",
+              //   subtitle: "New chat alerts",
+              //   value: _messages,
+              //   onChanged: (v) => setState(() => _messages = v),
+              // ),
 
-              const SizedBox(height: 28),
+              // const SizedBox(height: 28),
 
-              // Email notifications
-              _SectionLabel("EMAIL NOTIFICATIONS", style: interBaseStyle),
-              const SizedBox(height: 12),
+              // // Email notifications
+              // _SectionLabel("EMAIL NOTIFICATIONS", style: interBaseStyle),
+              // const SizedBox(height: 12),
 
-              _NotificationTile(
-                icon: Icons.receipt_long_outlined,
-                title: "Ride Receipts",
-                subtitle: "Sent after every trip",
-                value: _rideReceipts,
-                onChanged: (v) => setState(() => _rideReceipts = v),
-              ),
+              // _NotificationTile(
+              //   icon: Icons.receipt_long_outlined,
+              //   title: "Ride Receipts",
+              //   subtitle: "Sent after every trip",
+              //   value: _rideReceipts,
+              //   onChanged: (v) => setState(() => _rideReceipts = v),
+              // ),
 
-              const SizedBox(height: 24),
+              // const SizedBox(height: 24),
             ],
           ),
         ),

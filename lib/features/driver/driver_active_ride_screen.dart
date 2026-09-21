@@ -672,14 +672,71 @@ class _DriverActiveRideScreenState
     );
   }
 
+  void _handleRideCancelledByOther(Map<String, dynamic>? data) {
+    _simulationTimer?.cancel();
+
+    final cancelledBy = data?['cancelledBy'] as String?;
+    final reason = data?['reason'] as String?;
+
+    final message = cancelledBy == 'RIDER'
+        ? (reason != null && reason.isNotEmpty
+              ? 'The rider cancelled this ride: $reason'
+              : 'The rider cancelled this ride.')
+        : 'This ride is no longer available.';
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Ride cancelled'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted) return;
+
+      ref.read(activeRideProvider.notifier).clear();
+
+      if (context.canPop()) {
+        context.pop();
+      }
+      context.go(RouteNames.driverhomescreen);
+    });
+  }
   // ============================================================
   // BUILD
   // ============================================================
 
   @override
   Widget build(BuildContext context) {
+    // ref.listen<Map<String, dynamic>?>(activeRideProvider, (previous, next) {
+    //   final currentstatus = next?['status'];
+
+    //   _handleDriverLocationUpdate(next);
+    //   if (currentstatus == 'DRIVER_ARRIVED' ||
+    //       currentstatus == 'DESTINATION_REACHED') {
+    //     if (!_isSheetExpanded) {
+    //       _toggleSheet();
+    //     }
+    //   }
+    // });
     ref.listen<Map<String, dynamic>?>(activeRideProvider, (previous, next) {
       final currentstatus = next?['status'];
+      if (currentstatus == 'CANCELLED' && previous?['status'] != 'CANCELLED') {
+        _handleRideCancelledByOther(next);
+        return;
+      }
 
       _handleDriverLocationUpdate(next);
       if (currentstatus == 'DRIVER_ARRIVED' ||

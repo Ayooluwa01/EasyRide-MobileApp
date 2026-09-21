@@ -34,6 +34,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Easy Ride needs camera access so you can take profile pictures, document photos, and vehicle inspection images.</string>
+	<key>NSFaceIDUsageDescription</key>
+    <string>Easy Ride needs Face ID to securely log you into your account.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Easy Ride requires background location access to accurately track trips even when the app is minimized.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -46,7 +48,9 @@
 	<string>Easy Ride needs permission to save trip receipts directly to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Easy Ride needs photo library access to let you select profile pictures and document photos.</string>
+
 	<key>UIApplicationSceneManifest</key>
+	
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>

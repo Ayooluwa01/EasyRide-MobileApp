@@ -13,7 +13,7 @@ class DriverBottomNav extends StatelessWidget {
   static const List<_NavItemData> _items = [
     _NavItemData(icon: Icons.home_rounded, label: 'Home'),
     _NavItemData(icon: Icons.history_rounded, label: 'Rides'),
-    _NavItemData(icon: Icons.chat_bubble_rounded, label: 'Chats'),
+    // _NavItemData(icon: Icons.chat_bubble_rounded, label: 'Chats'),
     _NavItemData(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
