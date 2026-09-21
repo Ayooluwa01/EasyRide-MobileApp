@@ -26,6 +26,10 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
   num _walletBalance = 12500;
   bool? _isbiometricsSupported;
   List<BiometricType>? _availableBiometrics;
+  bool _isAuthenticating = false;
+  bool get _isFace =>
+      _availableBiometrics?.contains(BiometricType.face) ?? false;
+  final secureStorage = const FlutterSecureStorage();
   Future<void> _openTopUpSheet() async {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -47,6 +51,7 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
   void initState() {
     super.initState();
     _checkSupportAndTypes();
+    _loadBiometricPreference();
   }
 
   Future<void> _checkSupportAndTypes() async {
@@ -57,6 +62,41 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
       _isbiometricsSupported = isSupported;
       _availableBiometrics = biometrics;
     });
+  }
+
+  Future<void> _loadBiometricPreference() async {
+    final storedValue = await secureStorage.read(
+      key: StorageKeys.biometrics_enabled,
+    );
+    if (storedValue != null) {
+      setState(() {
+        _biometricsEnabled = storedValue == 'true';
+      });
+    }
+  }
+
+  Future<void> _onBiometricToggle(bool v) async {
+    if (_isAuthenticating) return;
+
+    if (v) {
+      setState(() => _isAuthenticating = true);
+      bool authenticated = false;
+      try {
+        authenticated = await _biometricService.authenticateWithBarrier(
+          context,
+          reason: 'Please authenticate to enable biometric login',
+        );
+      } finally {
+        if (mounted) setState(() => _isAuthenticating = false);
+      }
+      if (!authenticated || !mounted) return;
+    }
+
+    setState(() => _biometricsEnabled = v);
+    await secureStorage.write(
+      key: StorageKeys.biometrics_enabled,
+      value: v.toString(),
+    );
   }
 
   @override
@@ -307,9 +347,8 @@ class _DriverProfileScreenState extends ConsumerState<DriverProfileScreen> {
                       label: "Biometric Login",
                       trailing: Switch(
                         value: _biometricsEnabled,
-                        onChanged: (v) {
-                          setState(() => _biometricsEnabled = v);
-                        },
+                        onChanged: _onBiometricToggle,
+
                         activeThumbColor: Colors.white,
                         activeTrackColor: const Color(0xFF2ED47A),
                         inactiveThumbColor: Colors.white,

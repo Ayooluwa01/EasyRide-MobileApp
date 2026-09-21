@@ -9,9 +9,12 @@ import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -30,10 +33,41 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
   final interBaseStyle = GoogleFonts.inter();
   final syneBaseStyle = GoogleFonts.syne(height: 1.15);
 
+  bool _trackingResumeChecked = false;
+
   @override
   void initState() {
     super.initState();
     _initializeHome();
+    _resumeTrackingIfOnline();
+  }
+
+  /// After a force-quit or system kill the profile still says "online" but the
+  /// background service is gone. Once the user loads, restart it.
+  void _resumeTrackingIfOnline() {
+    ref.listenManual(currentUserProvider, (previous, next) {
+      if (_trackingResumeChecked) return;
+
+      final user = next.value;
+      if (user == null) return; // still loading
+
+      _trackingResumeChecked = true;
+      if (user.driverProfile?.isOnline ?? false) {
+        _startTrackingSafely();
+      }
+    }, fireImmediately: true);
+  }
+
+  Future<void> _startTrackingSafely() async {
+    try {
+      await ref.read(driverOnlineServiceProvider).syncBackgroundTracking(true);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to resume background tracking',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _initializeHome() async {
@@ -58,6 +92,60 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  // ==========================================================
+  // LOCATION PERMISSION (must be granted in the main app before
+  // the background service starts; the background isolate has no UI
+  // and cannot ask)
+  // ==========================================================
+  Future<bool> _ensureLocationPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      _showLocationMessage('Turn on Location Services to go online.');
+      return false;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    // iOS only shows the "Always" upgrade prompt on a second request.
+    if (permission == LocationPermission.whileInUse &&
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      _showLocationMessage(
+        'Location access is blocked. Enable it in Settings to go online.',
+        openSettings: true,
+      );
+      return false;
+    }
+
+    final granted =
+        permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+    if (!granted) {
+      _showLocationMessage('Location permission is needed to go online.');
+    }
+    return granted;
+  }
+
+  void _showLocationMessage(String message, {bool openSettings = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: openSettings
+            ? SnackBarAction(
+                label: 'Settings',
+                onPressed: Geolocator.openAppSettings,
+              )
+            : null,
+      ),
+    );
   }
 
   @override
@@ -145,6 +233,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                 child: _OnlineStatusHero(
                   isOnline: isOnline,
                   onToggle: (value) async {
+                    // Ask for location permission before going online so the
+                    // background service can start tracking.
+                    if (value && !await _ensureLocationPermission()) return;
+
                     try {
                       await ref
                           .read(driverOnlineServiceProvider)
@@ -226,7 +318,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
               // RIDE OFFERS
               // ==========================================================
               Text(
-                'YOUR LOCATTION',
+                'YOUR LOCATION',
                 style: interBaseStyle.copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -371,6 +463,23 @@ class _AvatarWithStatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final url = imageUrl;
+
+    // Shown when there is no photo, or when the photo fails to load
+    // (bad URL, 404, offline).
+    final initialsWidget = Container(
+      color: colorScheme.primary.withValues(alpha: 0.14),
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 18,
+          color: colorScheme.primary,
+        ),
+      ),
+    );
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -385,20 +494,18 @@ class _AvatarWithStatusDot extends StatelessWidget {
               width: 2,
             ),
           ),
-          child: CircleAvatar(
-            radius: 26,
-            backgroundColor: colorScheme.primary.withValues(alpha: 0.14),
-            backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-            child: imageUrl == null
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: colorScheme.primary,
+          child: ClipOval(
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: (url == null || url.isEmpty)
+                  ? initialsWidget
+                  : Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => initialsWidget,
                     ),
-                  )
-                : null,
+            ),
           ),
         ),
         Positioned(
