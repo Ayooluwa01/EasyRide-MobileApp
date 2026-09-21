@@ -62,64 +62,6 @@ class RiderSecuritySettings extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Account is secure banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: secureBannerBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isDark ? colorScheme.surface : Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        color: secureBannerText,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Account is secure",
-                          style: interBaseStyle.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "LAST CHECKED TODAY",
-                          style: interBaseStyle.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: secureBannerText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Login & Security
-              _SectionLabel(
-                "LOGIN & SECURITY",
-                color: sectionLabelColor,
-                style: interBaseStyle,
-              ),
               const SizedBox(height: 12),
 
               _SecurityTile(
@@ -129,20 +71,20 @@ class RiderSecuritySettings extends StatelessWidget {
                 onTap: () {},
               ),
               const SizedBox(height: 12),
-              _SecurityTile(
-                icon: Icons.phone_iphone_outlined,
-                title: "Two-Factor Auth",
-                subtitle: "Extra layer of security",
-                trailing: _StatusPill(
-                  label: "ENABLED",
-                  style: interBaseStyle,
-                  background: secureBannerBg,
-                  textColor: secureBannerText,
-                ),
-                onTap: () {},
-              ),
 
-              const SizedBox(height: 28),
+              // _SecurityTile(
+              //   icon: Icons.phone_iphone_outlined,
+              //   title: "Two-Factor Auth",
+              //   subtitle: "Extra layer of security",
+              //   trailing: _StatusPill(
+              //     label: "ENABLED",
+              //     style: interBaseStyle,
+              //     background: secureBannerBg,
+              //     textColor: secureBannerText,
+              //   ),
+              //   onTap: () {},
+              // ),
+              const SizedBox(height: 18),
 
               // Data & Privacy
               _SectionLabel(

@@ -76,7 +76,7 @@ final appRouter = GoRouter(
         if (location == RouteNames.rider ||
             location == RouteNames.riderhomescreen ||
             location == RouteNames.riderpaymentinformation ||
-            location == RouteNames.ridersecurity ||
+            // location == RouteNames.ridersecurity ||
             location == '/requestride' ||
             location == '/activeride' ||
             location == RouteNames.chatscreen) {
@@ -116,7 +116,7 @@ final appRouter = GoRouter(
     if (location == RouteNames.rider ||
         location == RouteNames.riderhomescreen ||
         location == RouteNames.riderpaymentinformation ||
-        location == RouteNames.ridersecurity ||
+        // location == RouteNames.ridersecurity ||
         location == RouteNames.chatscreen ||
         location == '/requestride' ||
         location == '/activeride' ||
