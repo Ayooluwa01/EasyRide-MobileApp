@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/router/route_names.dart';
+import 'package:easy_ride/app/services/contacts_service.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
@@ -27,12 +28,13 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<DriverHomeScreen> createState() => _DriverHomeScreenState();
 }
 
-class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
+class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
+    with WidgetsBindingObserver {
   GoogleMapController? _controller;
   static const LatLng _target = LatLng(6.5244, 3.3792); // Lagos
   final interBaseStyle = GoogleFonts.inter();
   final syneBaseStyle = GoogleFonts.syne(height: 1.15);
-
+  final ContactService _contact = ContactService();
   bool _trackingResumeChecked = false;
 
   @override
@@ -40,6 +42,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     super.initState();
     _initializeHome();
     _resumeTrackingIfOnline();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _contact.ensurePermissionIsGranted(context);
+      }
+    });
+    WidgetsBinding.instance.addObserver(this);
   }
 
   /// After a force-quit or system kill the profile still says "online" but the
@@ -95,9 +103,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
   }
 
   // ==========================================================
-  // LOCATION PERMISSION (must be granted in the main app before
-  // the background service starts; the background isolate has no UI
-  // and cannot ask)
+
   // ==========================================================
   Future<bool> _ensureLocationPermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
@@ -146,6 +152,20 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
             : null,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Check if the user returned to the app from settings
+    if (state == AppLifecycleState.resumed) {
+      _contact.ensurePermissionIsGranted(context);
+    }
   }
 
   @override

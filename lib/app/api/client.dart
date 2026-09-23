@@ -24,7 +24,8 @@ class ApiClient {
 
   void _initialize() {
     // const String baseUrl = 'http://127.0.0.1:3000';
-    const String baseUrl = 'http://127.0.0.1:3000';
+    const String baseUrl =
+        'https://8e26-2c0f-f5c0-739-662f-f8c7-5581-3d55-a40.ngrok-free.app';
 
     _dio = Dio(
       BaseOptions(
