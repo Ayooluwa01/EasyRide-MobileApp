@@ -1,13 +1,13 @@
 import 'package:easy_ride/features/auth/models/user/user_model.dart';
 
 class LoginRequest {
-  final String phone;
+  final String password;
   final String email;
 
-  LoginRequest({required this.email, required this.phone});
+  LoginRequest({required this.email, required this.password});
 
   Map<String, dynamic> toJson() {
-    return {'phone': phone, 'email': email};
+    return {'password': password, 'email': email};
   }
 }
 

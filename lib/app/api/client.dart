@@ -58,12 +58,6 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest:
             (RequestOptions options, RequestInterceptorHandler handler) async {
-              developer.log(
-                '${options.method} ${options.baseUrl}${options.path}',
-                name: 'ApiClient',
-              );
-              developer.log('Headers: ${options.headers}', name: 'ApiClient');
-              developer.log('Body: ${options.data}', name: 'ApiClient');
               try {
                 final token = await secureStorage.read(key: _accessTokenKey);
                 final isAuthRequest = AuthRoutes.isAuthRoute(options.path);
@@ -217,6 +211,8 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
+    // ref.read(appActivityProvider.notifier).startLoading();
+
     try {
       return await _dio.post(
         path,
@@ -231,6 +227,8 @@ class ApiClient {
         throw err;
       }
       rethrow;
+    } finally {
+      // ref.read(appActivityProvider.notifier).stopLoading();
     }
   }
 

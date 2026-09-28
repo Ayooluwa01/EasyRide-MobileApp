@@ -1,60 +1,3 @@
-class User {
-  final String? id;
-  final String? phone;
-  final String? role;
-  final String? fullName;
-  final String? email;
-  final String? profilePhotoUrl;
-  final bool isPhoneVerified;
-  final String? onboardingStatus;
-  final int tokenVersion;
-  final String? deletedAt;
-  final String? createdAt;
-  final String? updatedAt;
-
-  // Driver side
-  final DriverProfile? driverProfile;
-
-  User({
-    this.id,
-    this.phone,
-    this.role,
-    this.fullName,
-    this.email,
-    this.profilePhotoUrl,
-    this.isPhoneVerified = false,
-    this.onboardingStatus,
-    this.tokenVersion = 0,
-    this.deletedAt,
-    this.createdAt,
-    this.updatedAt,
-    this.driverProfile,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    final driverProfileJson = json['driverProfile'];
-
-    return User(
-      id: json['id'] as String?,
-      phone: json['phone'] as String?,
-      role: json['role'] as String?,
-      fullName: json['fullName'] as String?,
-      email: json['email'] as String?,
-      profilePhotoUrl: json['profilePhotoUrl'] as String?,
-      isPhoneVerified: json['isPhoneVerified'] as bool? ?? false,
-      onboardingStatus: json['onboardingStatus'] as String?,
-      tokenVersion: json['tokenVersion'] as int? ?? 0,
-      deletedAt: json['deletedAt'] as String?,
-      createdAt: json['createdAt'] as String?,
-      updatedAt: json['updatedAt'] as String?,
-
-      driverProfile: driverProfileJson is Map<String, dynamic>
-          ? DriverProfile.fromJson(driverProfileJson)
-          : null,
-    );
-  }
-}
-
 class DriverProfile {
   final String? id;
   final String? userId;
@@ -135,4 +78,120 @@ class DriverProfile {
       updatedAt: json['updatedAt'] as String?,
     );
   }
+}
+
+class Contact {
+  final String? id;
+  final String? userId;
+  final String? name;
+  final String? phone;
+  final String? createdAt;
+  final String? updatedAt;
+
+  Contact({
+    this.id,
+    this.userId,
+    this.name,
+    this.phone,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Contact.fromJson(Map<String, dynamic> json) {
+    return Contact(
+      id: json['id'] as String?,
+      userId: json['userId'] as String?,
+      name: json['name'] as String?,
+      phone: json['phone'] as String?,
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
+    );
+  }
+}
+
+class User {
+  final String? id;
+  final String? phone;
+  final String? role;
+  final String? fullName;
+  final String? email;
+  final String? profilePhotoUrl;
+  final bool isPhoneVerified;
+  final String? onboardingStatus;
+  final int tokenVersion;
+  final String? deletedAt;
+  final String? createdAt;
+  final String? updatedAt;
+  final List<Contact> contacts;
+  final String? nextStep; // NEW
+
+  final DriverProfile? driverProfile;
+
+  User({
+    this.id,
+    this.phone,
+    this.role,
+    this.fullName,
+    this.email,
+    this.profilePhotoUrl,
+    this.isPhoneVerified = false,
+    this.onboardingStatus,
+    this.tokenVersion = 0,
+    this.deletedAt,
+    this.createdAt,
+    this.updatedAt,
+    this.driverProfile,
+    this.contacts = const [],
+    this.nextStep,
+  });
+
+  bool get needsPassword => nextStep == 'SET_PASSWORD';
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    final driverProfileJson = json['driverProfile'];
+    final contactsJson = json['contacts'];
+
+    return User(
+      id: json['id'] as String?,
+      phone: json['phone'] as String?,
+      role: json['role'] as String?,
+      fullName: json['fullName'] as String?,
+      email: json['email'] as String?,
+      profilePhotoUrl: json['profilePhotoUrl'] as String?,
+      isPhoneVerified: json['isPhoneVerified'] as bool? ?? false,
+      onboardingStatus: json['onboardingStatus'] as String?,
+      tokenVersion: json['tokenVersion'] as int? ?? 0,
+      deletedAt: json['deletedAt'] as String?,
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
+      contacts: contactsJson is List
+          ? contactsJson
+                .whereType<Map<String, dynamic>>()
+                .map(Contact.fromJson)
+                .toList()
+          : const [],
+      driverProfile: driverProfileJson is Map<String, dynamic>
+          ? DriverProfile.fromJson(driverProfileJson)
+          : null,
+      nextStep: json['nextStep'] as String?,
+    );
+  }
+}
+
+// Wraps the top-level shape of GET /user/me's `data` field:
+// { "user": { ... }, "nextStep": "SET_PASSWORD" | null }
+class CurrentUserResponse {
+  final User user;
+  final String? nextStep;
+
+  CurrentUserResponse({required this.user, this.nextStep});
+
+  factory CurrentUserResponse.fromJson(Map<String, dynamic> json) {
+    return CurrentUserResponse(
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      nextStep: json['nextStep'] as String?,
+    );
+  }
+
+  bool get needsPassword => nextStep == 'SET_PASSWORD';
 }

@@ -2,9 +2,12 @@ import 'package:easy_ride/app/services/websocket.dart';
 import 'package:easy_ride/app/shared/bottom_nav.dart';
 import 'package:easy_ride/app/shared/driver_bottom_nav.dart';
 import 'package:easy_ride/app/shared/storage_keys.dart';
+import 'package:easy_ride/features/auth/screens/create_password_screen.dart';
 import 'package:easy_ride/features/auth/screens/get_started.dart';
 import 'package:easy_ride/features/auth/screens/login_screen.dart';
 import 'package:easy_ride/features/auth/screens/otp_screen.dart';
+import 'package:easy_ride/features/auth/screens/request_otp_email_screen.dart';
+import 'package:easy_ride/features/auth/screens/signup_otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
 import 'package:easy_ride/features/driver/driver_active_ride_screen.dart';
 import 'package:easy_ride/features/driver/driver_home_screen.dart';
@@ -161,15 +164,42 @@ final appRouter = GoRouter(
       builder: (context, state) {
         return const SignupScreen();
       },
+      routes: [
+        GoRoute(
+          path: 'otp',
+          name: 'otp',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return SignupOtpScreen(
+              contactInfo: extra?['email'] as String?,
+              phone: extra?['phone'] as String?,
+            );
+          },
+        ),
+      ],
     ),
 
     GoRoute(
-      path: RouteNames.otp,
-      name: 'otp',
+      path: RouteNames.createPassword,
+      name: 'createPassword',
       builder: (context, state) {
-        return const OtpScreen();
+        return const CreatePasswordScreen();
       },
     ),
+    GoRoute(
+      path: RouteNames.requestOtpEmail,
+      name: 'requestOtpEmail',
+      builder: (context, state) {
+        return const RequestOtpEmailScreen();
+      },
+    ),
+    // GoRoute(
+    //   path: RouteNames.otp,
+    //   name: 'otp',
+    //   builder: (context, state) {
+    //     return const OtpScreen();
+    //   },
+    // ),
 
     // =========================================================
     // RIDER

@@ -1,3 +1,4 @@
+import 'package:easy_ride/app/router/route_names.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,8 +68,10 @@ class RiderSecuritySettings extends StatelessWidget {
               _SecurityTile(
                 icon: Icons.key_outlined,
                 title: "Change Password",
-                subtitle: "Last changed 3 months ago",
-                onTap: () {},
+                // subtitle: "Last changed 3 months ago",
+                onTap: () {
+                  context.pop(RouteNames.requestOtpEmail);
+                },
               ),
               const SizedBox(height: 12),
 

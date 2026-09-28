@@ -1,19 +1,22 @@
+import 'package:easy_ride/app/api/client.dart';
+import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/features/auth/screens/steps/contact_info_step.dart';
 import 'package:easy_ride/features/auth/screens/steps/personal_info_step.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_ride/features/auth/screens/steps/profile_info_step.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   // Current form step
   int step = 0;
   UserRole? role;
@@ -42,6 +45,16 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() {
       fullName = newFullName;
       step++;
+    });
+  }
+
+  void _tapCircle(int targetStep) {
+    if (targetStep >= step) {
+      return;
+    }
+
+    setState(() {
+      step = targetStep;
     });
   }
 
@@ -213,29 +226,34 @@ class _SignupScreenState extends State<SignupScreen> {
     required bool active,
     required ColorScheme colorScheme,
   }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: active ? colorScheme.primary : colorScheme.surface,
-        border: Border.all(
-          color: active
-              ? colorScheme.primary
-              : colorScheme.onSurface.withValues(alpha: 0.15),
-        ),
-      ),
-      child: Center(
-        child: Text(
-          '$number',
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: () {
+        _tapCircle(number - 1);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: active ? colorScheme.primary : colorScheme.surface,
+          border: Border.all(
             color: active
-                ? colorScheme.onPrimary
-                : colorScheme.onSurface.withValues(alpha: 0.4),
+                ? colorScheme.primary
+                : colorScheme.onSurface.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            '$number',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: active
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
           ),
         ),
       ),
@@ -254,11 +272,31 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  void _submitSignup() {
-    debugPrint('Full name: $fullName');
-    debugPrint('Phone: $phone');
-    debugPrint('Email: $email');
-    debugPrint('Role: $role');
-    debugPrint('Profile photo: ${profilePhoto?.path}');
+  Future<void> _submitSignup() async {
+    if (fullName == null || phone == null || role == null) {
+      return;
+    }
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.post(
+        Endpoints.signup,
+        data: {
+          'fullName': fullName,
+          'phone': phone,
+          'email': email,
+          'role': role == UserRole.driver ? 'DRIVER' : 'RIDER',
+        },
+      );
+      final data = response.data;
+
+      if (data['success'] == true) {
+        debugPrint('Signup successful');
+
+        context.go('/signup/otp', extra: {'phone': phone, 'email': email});
+      }
+    } catch (e) {
+      debugPrint('Signup failed: $e');
+    }
   }
 }

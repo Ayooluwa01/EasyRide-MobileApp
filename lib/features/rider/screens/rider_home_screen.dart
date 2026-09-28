@@ -1,13 +1,19 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/check_active_ride.dart';
+import 'package:easy_ride/app/services/contacts_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/contacts_bottom_sheet.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
+import 'package:easy_ride/features/auth/models/user/user_model.dart'
+    hide Contact;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_contacts/models/contact/contact.dart';
 
 class RiderHomeScreen extends ConsumerStatefulWidget {
   const RiderHomeScreen({super.key});
@@ -16,7 +22,8 @@ class RiderHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<RiderHomeScreen> createState() => _RiderHomeScreenState();
 }
 
-class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
+class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen>
+    with WidgetsBindingObserver {
   GoogleMapController? _mapController;
   bool _isFollowingUser = true;
   bool? _currentMapStyleIsDark;
@@ -24,7 +31,8 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   static const double _lagosLng = 3.3792;
   final Set<Marker> _markers = {};
   BitmapDescriptor? carIcon;
-
+  bool _passwordCheckDone = false;
+  bool _isLoadingContacts = false;
   // Search State
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
@@ -32,9 +40,13 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeHome();
+    WidgetsBinding.instance.addObserver(this);
+    _redirectIfNeedsPassword();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeHome();
+      // If _initializeHome redirected to an active ride, we're unmounted
+      // and this is skipped.
+      if (mounted) _loadAndShowContacts();
     });
   }
 
@@ -83,9 +95,17 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadAndShowContacts();
+    }
   }
 
   void _flyToLocation(double lat, double lng, {double zoom = 16.0}) {
@@ -105,6 +125,62 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen> {
     // await controller.setMapStyle(isDark ? darkStyleJson : null);
 
     _currentMapStyleIsDark = isDark;
+  }
+
+  void _redirectIfNeedsPassword() {
+    ref.listenManual(currentUserProvider, (previous, next) {
+      if (_passwordCheckDone) return;
+
+      final user = next.value;
+      if (user == null) return;
+
+      _passwordCheckDone = true;
+      if (user.needsPassword) {
+        context.go(RouteNames.createPassword);
+      }
+    }, fireImmediately: true);
+  }
+
+  Future<void> _loadAndShowContacts() async {
+    if (!mounted || _isLoadingContacts) return;
+
+    final user = ref.read(currentUserProvider).value;
+    if (user == null || user.contacts.isNotEmpty) return;
+
+    _isLoadingContacts = true;
+    try {
+      final contactService = ref.read(contactServiceProvider);
+      final fetchedContacts = await contactService.getAllContacts(context);
+      if (!mounted || fetchedContacts.isEmpty) return;
+
+      final List<Contact>? selectedList =
+          await showModalBottomSheet<List<Contact>>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => ContactSheet(
+              contacts: fetchedContacts,
+              initiallySelected: const [],
+            ),
+          );
+      if (!mounted) return;
+
+      if (selectedList != null && selectedList.isNotEmpty) {
+        for (final contact in selectedList) {
+          if (contact.phones.isEmpty) continue;
+          final phone = contact.phones.first.number;
+          await contactService.saveContact(
+            name: contact.displayName ?? 'Unknown Contact',
+            phone: phone,
+          );
+          developer.log(
+            'Saved emergency contact: ${contact.displayName} - $phone',
+          );
+        }
+      }
+    } finally {
+      _isLoadingContacts = false;
+    }
   }
 
   @override

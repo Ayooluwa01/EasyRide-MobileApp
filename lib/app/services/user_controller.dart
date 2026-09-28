@@ -39,6 +39,8 @@
 // final currentUserProvider = AsyncNotifierProvider<UserController, User?>(
 //   UserController.new,
 // );
+import 'dart:developer' as developer;
+
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_service.dart';
 import 'package:easy_ride/features/auth/models/user/user_model.dart';
@@ -46,23 +48,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class UserController extends AsyncNotifier<User?> {
   @override
+  @override
   Future<User?> build() async {
     try {
       final userService = ref.read(userServiceProvider);
+
       final user = await userService.getMe();
+      developer.log(
+        'Loaded user ${user.id} — role: ${user.role}, '
+        'needsPassword: ${user.needsPassword}',
+        name: 'UserController',
+      );
+
       if (user.driverProfile != null) {
         final isOnline = user.driverProfile!.isOnline;
-        // Sync background tracking with the persisted backend state.
+
         await ref
             .read(driverOnlineServiceProvider)
             .syncBackgroundTracking(isOnline);
       }
 
       return user;
-    } catch (e) {
-      // throw AsyncError(e, stackTrace);
-    }
-    return null;
+    } catch (e, stackTrace) {}
   }
 
   Future<void> refreshUser() async {
