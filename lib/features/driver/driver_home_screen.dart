@@ -9,11 +9,13 @@ import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/contacts_service.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/contacts_bottom_sheet.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_contacts/models/contact/contact.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -31,20 +33,23 @@ class DriverHomeScreen extends ConsumerStatefulWidget {
 class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     with WidgetsBindingObserver {
   GoogleMapController? _controller;
-  static const LatLng _target = LatLng(6.5244, 3.3792); // Lagos
+  static const LatLng _target = LatLng(6.5244, 3.3792);
   final interBaseStyle = GoogleFonts.inter();
   final syneBaseStyle = GoogleFonts.syne(height: 1.15);
-  final ContactService _contact = ContactService();
   bool _trackingResumeChecked = false;
-
+  bool _passwordCheckDone = false;
+  bool _isTogglingOnline = false;
+  bool _isLoadingContacts = false;
   @override
   void initState() {
     super.initState();
+    _redirectIfNeedsPassword();
+
     _initializeHome();
     _resumeTrackingIfOnline();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _contact.ensurePermissionIsGranted(context);
+        _loadAndShowContacts();
       }
     });
     WidgetsBinding.instance.addObserver(this);
@@ -154,6 +159,25 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     );
   }
 
+  void _redirectIfNeedsPassword() {
+    ref.listenManual(currentUserProvider, (previous, next) {
+      if (_passwordCheckDone) return;
+
+      final user = next.value;
+      if (user == null) return; // still loading
+
+      _passwordCheckDone = true;
+
+      if (user.needsPassword) {
+        developer.log(
+          'User needs password — redirecting',
+          name: 'DriverHomeScreen',
+        );
+        context.go(RouteNames.createPassword);
+      }
+    }, fireImmediately: true);
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -164,7 +188,97 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Check if the user returned to the app from settings
     if (state == AppLifecycleState.resumed) {
-      _contact.ensurePermissionIsGranted(context);
+      _loadAndShowContacts();
+    }
+  }
+
+  // Future<void> _loadAndShowContacts() async {
+  //   if (!mounted) return;
+
+  //   final user = ref.read(currentUserProvider).value;
+
+  //   if (user == null) return;
+  //   // Already has emergency contacts saved.
+  //   if (user.contacts.isNotEmpty) {
+  //     return;
+  //   }
+
+  //   final contactService = ref.read(contactServiceProvider);
+
+  //   final fetchedContacts = await contactService.getAllContacts(context);
+
+  //   if (!mounted || fetchedContacts.isEmpty) return;
+
+  //   final List<Contact>? selectedList =
+  //       await showModalBottomSheet<List<Contact>>(
+  //         context: context,
+  //         isScrollControlled: true,
+  //         backgroundColor: Colors.transparent,
+  //         builder: (context) => ContactSheet(
+  //           contacts: fetchedContacts,
+  //           initiallySelected: const [],
+  //         ),
+  //       );
+
+  //   if (!mounted) return;
+
+  //   if (selectedList != null && selectedList.isNotEmpty) {
+  //     for (final contact in selectedList) {
+  //       if (contact.phones.isEmpty) continue;
+
+  //       final phone = contact.phones.first.number;
+
+  //       await contactService.saveContact(
+  //         name: contact.displayName ?? 'Unknown Contact',
+  //         phone: phone,
+  //       );
+
+  //       developer.log(
+  //         'Saved emergency contact: ${contact.displayName} - $phone',
+  //       );
+  //     }
+  //   }
+  // }
+
+  Future<void> _loadAndShowContacts() async {
+    if (!mounted || _isLoadingContacts) return;
+
+    final user = ref.read(currentUserProvider).value;
+    if (user == null || user.contacts.isNotEmpty) return;
+
+    _isLoadingContacts = true;
+    try {
+      final contactService = ref.read(contactServiceProvider);
+      final fetchedContacts = await contactService.getAllContacts(context);
+      if (!mounted || fetchedContacts.isEmpty) return;
+
+      final List<Contact>? selectedList =
+          await showModalBottomSheet<List<Contact>>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => ContactSheet(
+              contacts: fetchedContacts,
+              initiallySelected: const [],
+            ),
+          );
+      if (!mounted) return;
+
+      if (selectedList != null && selectedList.isNotEmpty) {
+        for (final contact in selectedList) {
+          if (contact.phones.isEmpty) continue;
+          final phone = contact.phones.first.number;
+          await contactService.saveContact(
+            name: contact.displayName ?? 'Unknown Contact',
+            phone: phone,
+          );
+          developer.log(
+            'Saved emergency contact: ${contact.displayName} - $phone',
+          );
+        }
+      }
+    } finally {
+      _isLoadingContacts = false;
     }
   }
 
@@ -251,11 +365,14 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               Skeletonizer(
                 enabled: userState.isLoading,
                 child: _OnlineStatusHero(
+                  isLoading: _isTogglingOnline,
                   isOnline: isOnline,
                   onToggle: (value) async {
+                    if (_isTogglingOnline) return;
                     // Ask for location permission before going online so the
                     // background service can start tracking.
                     if (value && !await _ensureLocationPermission()) return;
+                    setState(() => _isTogglingOnline = true);
 
                     try {
                       await ref
@@ -263,6 +380,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                           .toggleOnlineStatus(value);
                     } catch (e) {
                       if (!mounted) return;
+                    } finally {
+                      if (mounted) setState(() => _isTogglingOnline = false);
                     }
                   },
                   colorScheme: colorScheme,
@@ -554,6 +673,7 @@ class _AvatarWithStatusDot extends StatelessWidget {
 
 class _OnlineStatusHero extends StatelessWidget {
   const _OnlineStatusHero({
+    required this.isLoading,
     required this.isOnline,
     required this.onToggle,
     required this.colorScheme,
@@ -563,6 +683,7 @@ class _OnlineStatusHero extends StatelessWidget {
   });
 
   final bool isOnline;
+  final bool isLoading;
   final ValueChanged<bool> onToggle;
   final ColorScheme colorScheme;
   final bool isDark;
@@ -658,7 +779,7 @@ class _OnlineStatusHero extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: GestureDetector(
-              onTap: () => onToggle(!isOnline),
+              onTap: isLoading ? null : () => onToggle(!isOnline),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -667,16 +788,28 @@ class _OnlineStatusHero extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
-                  child: Text(
-                    isOnline ? 'Go offline' : 'Go online',
-                    style: interBaseStyle.copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isOnline
-                          ? colorScheme.primary
-                          : colorScheme.onPrimary,
-                    ),
-                  ),
+                  child: isLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            // Matches the text color dynamically
+                            strokeWidth: 2,
+                            color: isOnline
+                                ? colorScheme.primary
+                                : colorScheme.onPrimary,
+                          ),
+                        )
+                      : Text(
+                          isOnline ? 'Go offline' : 'Go online',
+                          style: interBaseStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isOnline
+                                ? colorScheme.primary
+                                : colorScheme.onPrimary,
+                          ),
+                        ),
                 ),
               ),
             ),

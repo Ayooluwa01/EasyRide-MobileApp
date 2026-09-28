@@ -24,8 +24,7 @@ class ApiClient {
 
   void _initialize() {
     // const String baseUrl = 'http://127.0.0.1:3000';
-    const String baseUrl =
-        'https://8e26-2c0f-f5c0-739-662f-f8c7-5581-3d55-a40.ngrok-free.app';
+    const String baseUrl = 'http://127.0.0.1:3000';
 
     _dio = Dio(
       BaseOptions(
@@ -59,12 +58,6 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest:
             (RequestOptions options, RequestInterceptorHandler handler) async {
-              developer.log(
-                '${options.method} ${options.baseUrl}${options.path}',
-                name: 'ApiClient',
-              );
-              developer.log('Headers: ${options.headers}', name: 'ApiClient');
-              developer.log('Body: ${options.data}', name: 'ApiClient');
               try {
                 final token = await secureStorage.read(key: _accessTokenKey);
                 final isAuthRequest = AuthRoutes.isAuthRoute(options.path);
@@ -218,6 +211,8 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
+    // ref.read(appActivityProvider.notifier).startLoading();
+
     try {
       return await _dio.post(
         path,
@@ -232,6 +227,8 @@ class ApiClient {
         throw err;
       }
       rethrow;
+    } finally {
+      // ref.read(appActivityProvider.notifier).stopLoading();
     }
   }
 

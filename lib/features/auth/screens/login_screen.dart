@@ -1,11 +1,15 @@
+import 'package:easy_ride/app/api/client.dart';
+import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/shared/auth_form_provider.dart';
+import 'package:easy_ride/app/shared/storage_keys.dart';
 import 'package:easy_ride/app/theme/theme_provider.dart';
 import 'package:easy_ride/core/widgets/app_button.dart';
 import 'package:easy_ride/features/auth/controllers/login_controller.dart';
 import 'package:easy_ride/features/auth/models/auth/login_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,9 +22,11 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _numberController;
+  // late final TextEditingController _numberController;
   late final TextEditingController _emailEditingController;
-
+  late final TextEditingController _passwordController;
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  bool _obscurePassword = false;
   final interBaseStyle = GoogleFonts.inter();
   final syneBaseStyle = GoogleFonts.syne(
     fontSize: 30,
@@ -30,13 +36,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _numberController = TextEditingController();
+    _passwordController = TextEditingController();
     _emailEditingController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _numberController.dispose();
+    _passwordController.dispose();
     _emailEditingController.dispose();
     super.dispose();
   }
@@ -54,20 +60,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     final request = LoginRequest(
-      phone: _numberController.text.trim(),
       email: _emailEditingController.text.trim(),
+      password: _passwordController.text.trim(),
     );
 
     try {
-      final response = await ref
-          .read(loginControllerProvider.notifier)
-          .login(request);
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.post(Endpoints.login, data: request);
 
-      if (!mounted) return;
+      final data = response.data;
+      final accessToken = data['data']['tokens']['accessToken'];
+      final refreshToken = data['data']['tokens']['refreshToken'];
+      final role = data['data']['role'];
+      await secureStorage.write(
+        key: StorageKeys.accessToken,
+        value: accessToken,
+      );
 
-      if (response.success) {
-        ref.read(loginRequestProvider.notifier).state = request;
-        context.push(RouteNames.otp);
+      await secureStorage.write(
+        key: StorageKeys.refreshToken,
+        value: refreshToken,
+      );
+
+      await secureStorage.write(key: StorageKeys.userRole, value: role);
+
+      if (!mounted) {
+        return;
+      }
+      if (role == 'DRIVER') {
+        context.go(RouteNames.driverhomescreen);
+      } else if (role == 'RIDER') {
+        context.go(RouteNames.riderhomescreen);
       }
     } catch (e) {
       if (!mounted) return;
@@ -175,57 +198,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              "PHONE NUMBER",
-                              style: interBaseStyle.copyWith(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.1,
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            TextFormField(
-                              controller: _numberController,
-                              keyboardType: TextInputType.phone,
-                              style: interBaseStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: "800 000 0000",
-                                hintStyle: TextStyle(
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: colorScheme.surface,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
-                                ),
-                                border: inputBorder,
-                                enabledBorder: inputBorder,
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: colorScheme.primary,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty)
-                                  ? 'Please enter your phone number'
-                                  : null,
-                            ),
-                            const SizedBox(height: 20),
-
+                            // TextFormField(
+                            //   controller: _numberController,
+                            //   keyboardType: TextInputType.phone,
+                            //   style: interBaseStyle.copyWith(
+                            //     fontSize: 16,
+                            //     fontWeight: FontWeight.w600,
+                            //     color: colorScheme.onSurface,
+                            //   ),
+                            //   decoration: InputDecoration(
+                            //     hintText: "800 000 0000",
+                            //     hintStyle: TextStyle(
+                            //       color: colorScheme.onSurface.withValues(
+                            //         alpha: 0.3,
+                            //       ),
+                            //     ),
+                            //     filled: true,
+                            //     fillColor: colorScheme.surface,
+                            //     contentPadding: const EdgeInsets.symmetric(
+                            //       horizontal: 16,
+                            //       vertical: 16,
+                            //     ),
+                            //     border: inputBorder,
+                            //     enabledBorder: inputBorder,
+                            //     focusedBorder: OutlineInputBorder(
+                            //       borderRadius: BorderRadius.circular(12),
+                            //       borderSide: BorderSide(
+                            //         color: colorScheme.primary,
+                            //         width: 1.5,
+                            //       ),
+                            //     ),
+                            //   ),
+                            //   validator: (value) =>
+                            //       (value == null || value.trim().isEmpty)
+                            //       ? 'Please enter your phone number'
+                            //       : null,
+                            // ),
+                            // const SizedBox(height: 20),
                             Text(
                               "EMAIL ADDRESS",
                               style: interBaseStyle.copyWith(
@@ -277,6 +286,94 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(height: 20),
 
+                            Text(
+                              "PASSWORD",
+                              style: interBaseStyle.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.1,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.next,
+                              style: interBaseStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Enter new password',
+                                hintStyle: TextStyle(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: colorScheme.surface,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                                border: inputBorder,
+                                enabledBorder: inputBorder,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.primary,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.error,
+                                  ),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.error,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                final password = value ?? '';
+
+                                if (password.isEmpty) {
+                                  return 'Please enter a new password';
+                                }
+
+                                if (password.length < 8) {
+                                  return 'Password must be at least 8 characters';
+                                }
+
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 20),
                             PrimaryButton(
                               label: "Continue",
                               onPressed: login,
@@ -290,6 +387,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 12.0),
+                      GestureDetector(
+                        onTap: () {
+                          context.go(RouteNames.requestOtpEmail);
+                        },
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            "Reset Password?",
+                            style: interBaseStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+
                       const SizedBox(height: 32),
 
                       // Create Account Link

@@ -3,4 +3,5 @@ class StorageKeys {
   static const refreshToken = 'refresh-token';
   static const userRole = 'role';
   static const biometrics_enabled = 'biometrics_enabled';
+  static const needsPassword = 'needs_password';
 }
