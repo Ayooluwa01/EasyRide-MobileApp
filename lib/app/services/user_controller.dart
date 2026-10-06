@@ -54,11 +54,6 @@ class UserController extends AsyncNotifier<User?> {
       final userService = ref.read(userServiceProvider);
 
       final user = await userService.getMe();
-      developer.log(
-        'Loaded user ${user.id} — role: ${user.role}, '
-        'needsPassword: ${user.needsPassword}',
-        name: 'UserController',
-      );
 
       if (user.driverProfile != null) {
         final isOnline = user.driverProfile!.isOnline;

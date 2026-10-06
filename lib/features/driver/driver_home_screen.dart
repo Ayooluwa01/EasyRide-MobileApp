@@ -3,12 +3,14 @@
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:easy_ride/app/api/client.dart';
 import 'package:easy_ride/app/api/endpoints.dart';
 import 'package:easy_ride/app/router/route_names.dart';
 import 'package:easy_ride/app/services/contacts_service.dart';
 import 'package:easy_ride/app/services/driver_online_service.dart';
 import 'package:easy_ride/app/services/user_controller.dart';
+import 'package:easy_ride/app/shared/app_toast.dart';
 import 'package:easy_ride/app/shared/contacts_bottom_sheet.dart';
 import 'package:easy_ride/app/shared/location_provider.dart';
 import 'package:flutter/foundation.dart'
@@ -37,23 +39,114 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   final interBaseStyle = GoogleFonts.inter();
   final syneBaseStyle = GoogleFonts.syne(height: 1.15);
   bool _trackingResumeChecked = false;
-  bool _passwordCheckDone = false;
   bool _isTogglingOnline = false;
   bool _isLoadingContacts = false;
+
+  // The user listener can fire many times, but the startup checks run once
+  bool _startupStarted = false;
+
+  // True only when no redirect happened (password and profile are fine)
+  bool _startupChecksDone = false;
+
   @override
   void initState() {
     super.initState();
-    _redirectIfNeedsPassword();
+    WidgetsBinding.instance.addObserver(this);
 
     _initializeHome();
     _resumeTrackingIfOnline();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadAndShowContacts();
-      }
-    });
-    WidgetsBinding.instance.addObserver(this);
+    _listenForUser();
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Only check contacts after the startup checks passed, so the sheet
+    // never opens on a screen the driver is about to be sent away from
+    if (state == AppLifecycleState.resumed && _startupChecksDone) {
+      _loadAndShowContacts();
+    }
+  }
+
+  // ==========================================================
+  // STARTUP CHECKS (run in order, one at a time)
+  //   1. password   2. driver profile   3. emergency contacts
+  // ==========================================================
+
+  // Waits until the user has loaded, then runs the startup checks once
+  void _listenForUser() {
+    ref.listenManual(currentUserProvider, (previous, next) {
+      if (_startupStarted) return;
+      if (next.value == null) return; // still loading
+
+      _startupStarted = true;
+
+      // wait for the first frame so we never navigate during initState
+      WidgetsBinding.instance.addPostFrameCallback((_) => _runStartupChecks());
+    }, fireImmediately: true);
+  }
+
+  Future<void> _runStartupChecks() async {
+    if (!mounted) return;
+
+    final user = ref.read(currentUserProvider).value;
+    if (user == null) return;
+
+    // 1. password comes first
+    if (user.needsPassword) {
+      context.go(RouteNames.createPassword);
+      return;
+    }
+
+    // 2. profile must be completed, or fixed after a rejection
+    final needsProfile = await _driverNeedsToCompleteProfile();
+    if (!mounted) return;
+
+    if (needsProfile) {
+      context.go(RouteNames.drivercompleteprofile);
+      return;
+    }
+
+    // 3. contacts only when nothing redirected the driver
+    _startupChecksDone = true;
+    await _loadAndShowContacts();
+  }
+
+  Future<bool> _driverNeedsToCompleteProfile() async {
+    try {
+      final res = await ref
+          .read(apiClientProvider)
+          .get(Endpoints.driverProfileStatus);
+
+      final data = res.data['data'];
+      final step = data['onboardingStep'];
+      final status = data['verificationStatus'];
+
+      // not submitted yet: still filling in the steps
+      if (step != 'SUBMITTED') return true;
+
+      // submitted but rejected: needs to fix and resubmit
+      return status == 'REJECTED';
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to check driver profile status',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // don't lock the driver out if the check fails; the server still
+      // blocks going online for unapproved drivers
+      return false;
+    }
+  }
+
+  // ==========================================================
+  // TRACKING / ACTIVE RIDE
+  // ==========================================================
 
   /// After a force-quit or system kill the profile still says "online" but the
   /// background service is gone. Once the user loads, restart it.
@@ -108,8 +201,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
   }
 
   // ==========================================================
-
+  // LOCATION PERMISSION
   // ==========================================================
+
   Future<bool> _ensureLocationPermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       _showLocationMessage('Turn on Location Services to go online.');
@@ -159,86 +253,42 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
     );
   }
 
-  void _redirectIfNeedsPassword() {
-    ref.listenManual(currentUserProvider, (previous, next) {
-      if (_passwordCheckDone) return;
+  // ==========================================================
+  // GO ONLINE / OFFLINE
+  // ==========================================================
 
-      final user = next.value;
-      if (user == null) return; // still loading
+  Future<void> _handleToggle(bool value) async {
+    if (_isTogglingOnline) return;
 
-      _passwordCheckDone = true;
+    // Ask for location permission before going online so the
+    // background service can start tracking.
+    if (value && !await _ensureLocationPermission()) return;
+    if (!mounted) return;
 
-      if (user.needsPassword) {
-        developer.log(
-          'User needs password — redirecting',
-          name: 'DriverHomeScreen',
-        );
-        context.go(RouteNames.createPassword);
-      }
-    }, fireImmediately: true);
-  }
+    setState(() => _isTogglingOnline = true);
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Check if the user returned to the app from settings
-    if (state == AppLifecycleState.resumed) {
-      _loadAndShowContacts();
+    try {
+      await ref.read(driverOnlineServiceProvider).toggleOnlineStatus(value);
+    } catch (e) {
+      if (mounted) AppToast.show(context, _errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _isTogglingOnline = false);
     }
   }
 
-  // Future<void> _loadAndShowContacts() async {
-  //   if (!mounted) return;
+  // Reads the server's message (for example "Profile not yet approved")
+  String _errorMessage(Object e) {
+    if (e is DioException && e.response?.data is Map) {
+      final message = e.response!.data['message'];
+      if (message is List) return message.join('\n');
+      if (message != null) return message.toString();
+    }
+    return 'Something went wrong';
+  }
 
-  //   final user = ref.read(currentUserProvider).value;
-
-  //   if (user == null) return;
-  //   // Already has emergency contacts saved.
-  //   if (user.contacts.isNotEmpty) {
-  //     return;
-  //   }
-
-  //   final contactService = ref.read(contactServiceProvider);
-
-  //   final fetchedContacts = await contactService.getAllContacts(context);
-
-  //   if (!mounted || fetchedContacts.isEmpty) return;
-
-  //   final List<Contact>? selectedList =
-  //       await showModalBottomSheet<List<Contact>>(
-  //         context: context,
-  //         isScrollControlled: true,
-  //         backgroundColor: Colors.transparent,
-  //         builder: (context) => ContactSheet(
-  //           contacts: fetchedContacts,
-  //           initiallySelected: const [],
-  //         ),
-  //       );
-
-  //   if (!mounted) return;
-
-  //   if (selectedList != null && selectedList.isNotEmpty) {
-  //     for (final contact in selectedList) {
-  //       if (contact.phones.isEmpty) continue;
-
-  //       final phone = contact.phones.first.number;
-
-  //       await contactService.saveContact(
-  //         name: contact.displayName ?? 'Unknown Contact',
-  //         phone: phone,
-  //       );
-
-  //       developer.log(
-  //         'Saved emergency contact: ${contact.displayName} - $phone',
-  //       );
-  //     }
-  //   }
-  // }
+  // ==========================================================
+  // EMERGENCY CONTACTS
+  // ==========================================================
 
   Future<void> _loadAndShowContacts() async {
     if (!mounted || _isLoadingContacts) return;
@@ -281,6 +331,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
       _isLoadingContacts = false;
     }
   }
+
+  // ==========================================================
+  // BUILD
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -367,23 +421,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
                 child: _OnlineStatusHero(
                   isLoading: _isTogglingOnline,
                   isOnline: isOnline,
-                  onToggle: (value) async {
-                    if (_isTogglingOnline) return;
-                    // Ask for location permission before going online so the
-                    // background service can start tracking.
-                    if (value && !await _ensureLocationPermission()) return;
-                    setState(() => _isTogglingOnline = true);
-
-                    try {
-                      await ref
-                          .read(driverOnlineServiceProvider)
-                          .toggleOnlineStatus(value);
-                    } catch (e) {
-                      if (!mounted) return;
-                    } finally {
-                      if (mounted) setState(() => _isTogglingOnline = false);
-                    }
-                  },
+                  onToggle: _handleToggle,
                   colorScheme: colorScheme,
                   isDark: isDark,
                   syneBaseStyle: syneBaseStyle,
@@ -454,7 +492,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               const SizedBox(height: 28),
 
               // ==========================================================
-              // RIDE OFFERS
+              // YOUR LOCATION
               // ==========================================================
               Text(
                 'YOUR LOCATION',
@@ -538,34 +576,6 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen>
               //     onAccept: () {},
               //     onReject: () {},
               //   ),
-
-              // Row(
-              //   children: [
-              //     Expanded(
-              //       child: _QuickActionCard(
-              //         icon: Icons.receipt_long_rounded,
-              //         label: 'Trip history',
-              //         accent: const Color(0xFF9B6BFF),
-              //         colorScheme: colorScheme,
-              //         isDark: isDark,
-              //         interBaseStyle: interBaseStyle,
-              //         onTap: () {},
-              //       ),
-              //     ),
-              //     const SizedBox(width: 12),
-              //     Expanded(
-              //       child: _QuickActionCard(
-              //         icon: Icons.account_balance_rounded,
-              //         label: 'Payouts',
-              //         accent: const Color(0xFF2ED47A),
-              //         colorScheme: colorScheme,
-              //         isDark: isDark,
-              //         interBaseStyle: interBaseStyle,
-              //         onTap: () {},
-              //       ),
-              //     ),
-              //   ],
-              // ),
             ],
           ),
         ),
@@ -898,80 +908,6 @@ class _StatCard extends StatelessWidget {
 }
 
 // ==================================================================
-// QUICK ACTION CARD
-// ==================================================================
-
-// class _QuickActionCard extends StatelessWidget {
-//   const _QuickActionCard({
-//     required this.icon,
-//     required this.label,
-//     required this.accent,
-//     required this.colorScheme,
-//     required this.isDark,
-//     required this.interBaseStyle,
-//     required this.onTap,
-//   });
-
-//   final IconData icon;
-//   final String label;
-//   final Color accent;
-//   final ColorScheme colorScheme;
-//   final bool isDark;
-//   final TextStyle interBaseStyle;
-//   final VoidCallback onTap;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Material(
-//       color: colorScheme.surface,
-//       borderRadius: BorderRadius.circular(18),
-//       child: InkWell(
-//         borderRadius: BorderRadius.circular(18),
-//         onTap: onTap,
-//         child: Container(
-//           padding: const EdgeInsets.all(16),
-//           decoration: BoxDecoration(
-//             borderRadius: BorderRadius.circular(18),
-//             boxShadow: [
-//               BoxShadow(
-//                 color: isDark
-//                     ? Colors.transparent
-//                     : Colors.black.withValues(alpha: 0.03),
-//                 blurRadius: 12,
-//                 offset: const Offset(0, 4),
-//               ),
-//             ],
-//           ),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Container(
-//                 width: 38,
-//                 height: 38,
-//                 decoration: BoxDecoration(
-//                   color: accent.withValues(alpha: 0.14),
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 child: Icon(icon, size: 19, color: accent),
-//               ),
-//               const SizedBox(height: 12),
-//               Text(
-//                 label,
-//                 style: interBaseStyle.copyWith(
-//                   fontSize: 13,
-//                   fontWeight: FontWeight.w700,
-//                   color: colorScheme.onSurface,
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// ==================================================================
 // RIDE OFFER CARD — swipe left to decline, tap button to accept
 // ==================================================================
 
@@ -1086,7 +1022,7 @@ class _RideOffersState extends State<_RideOffers> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ------------------------------------------
-            // Header: new-offer badge + fare badge
+            // Header: fare badge
             // ------------------------------------------
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
@@ -1184,29 +1120,6 @@ class _RideOffersState extends State<_RideOffers> {
               ),
             ),
 
-            const SizedBox(height: 16),
-
-            // ------------------------------------------
-            // Distance / time chips
-            // ------------------------------------------
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 18),
-            //   child: Row(
-            //     children: [
-            //       _InfoChip(
-            //         icon: Icons.access_time_rounded,
-            //         label: widget.etaMinutes,
-            //         colorScheme: colorScheme,
-            //       ),
-            //       const SizedBox(width: 8),
-            //       _InfoChip(
-            //         icon: Icons.map_rounded,
-            //         label: widget.distanceKm,
-            //         colorScheme: colorScheme,
-            //       ),
-            //     ],
-            //   ),
-            // ),
             const SizedBox(height: 18),
             Divider(
               height: 1,
@@ -1346,44 +1259,6 @@ class _RideOffersState extends State<_RideOffers> {
     );
   }
 }
-
-// class _InfoChip extends StatelessWidget {
-//   const _InfoChip({
-//     required this.icon,
-//     required this.label,
-//     required this.colorScheme,
-//   });
-
-//   final IconData icon;
-//   final String label;
-//   final ColorScheme colorScheme;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-//       decoration: BoxDecoration(
-//         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-//         borderRadius: BorderRadius.circular(10),
-//       ),
-//       child: Row(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-//           const SizedBox(width: 4),
-//           Text(
-//             label,
-//             style: TextStyle(
-//               fontSize: 12.5,
-//               fontWeight: FontWeight.w600,
-//               color: colorScheme.onSurfaceVariant,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 class _StepperButton extends StatelessWidget {
   const _StepperButton({

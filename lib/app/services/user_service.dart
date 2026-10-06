@@ -22,8 +22,6 @@ class UserService {
 
       final userJson = body['user'] as Map<String, dynamic>;
 
-      developer.log('Contacts: ${userJson['contacts']}', name: 'UserService');
-
       return User.fromJson({...userJson, 'nextStep': body['nextStep']});
     } catch (e, stackTrace) {
       developer.log(

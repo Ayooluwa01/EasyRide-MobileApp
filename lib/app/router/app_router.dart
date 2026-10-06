@@ -9,6 +9,7 @@ import 'package:easy_ride/features/auth/screens/otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/request_otp_email_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_otp_screen.dart';
 import 'package:easy_ride/features/auth/screens/signup_screen.dart';
+import 'package:easy_ride/features/driver/complete_information_screen.dart';
 import 'package:easy_ride/features/driver/driver_active_ride_screen.dart';
 import 'package:easy_ride/features/driver/driver_home_screen.dart';
 import 'package:easy_ride/features/driver/driver_profile_screen.dart';
@@ -184,6 +185,14 @@ final appRouter = GoRouter(
       name: 'createPassword',
       builder: (context, state) {
         return const CreatePasswordScreen();
+      },
+    ),
+
+    GoRoute(
+      path: RouteNames.drivercompleteprofile,
+      name: 'drivercompleteprofile',
+      builder: (context, state) {
+        return const CompleteInformationScreen();
       },
     ),
     GoRoute(

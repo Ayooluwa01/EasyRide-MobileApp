@@ -21,4 +21,5 @@ class RouteNames {
   static const driverrides = '/driver/ride';
   static const driverchat = '/driver/chat';
   static const driverprofile = '/driver/profile';
+  static const drivercompleteprofile = '/driver/drivercompleteprofile';
 }
