@@ -23,6 +23,15 @@ class Endpoints {
   static const String verifyPasswordResetOtp =
       '/auth/password-reset/verify-otp';
   static const String resetPassword = '/auth/password-reset/reset';
+  static const String sosAlert = '/safety/sos/alert';
+  static const String resolveSosAlert = '/safety/sos/resolve';
+  static const String driverProfileStatus = '/user/me/driver-profile';
+  static const driverPersonalInfo = '/user/me/driver-profile/personal-info';
+  static const driverVehicleInfo = '/user/me/driver-profile/vehicle-info';
+  static const driverDocuments = '/user/me/driver-profile/documents';
+  static const driverBankDetails = '/user/me/driver-profile/bank-details';
+  static const driverSubmit = '/user/me/driver-profile/submit';
+  static const upload = '/upload/presign'; // see the upload note below
 }
 
 class AuthRoutes {

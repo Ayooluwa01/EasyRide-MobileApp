@@ -88,7 +88,6 @@ class _CreatePasswordScreenState extends ConsumerState<CreatePasswordScreen> {
         },
       );
 
-      developer.log("RESPONSE:$response");
       final body = response.data;
 
       if (body['success'] == true) {

@@ -223,6 +223,7 @@ class _RiderHomeScreenState extends ConsumerState<RiderHomeScreen>
             onMapCreated: (controller) async {
               _mapController = controller;
               _currentMapStyleIsDark = isDark;
+
               // await controller.setMapStyle(isDark ? darkStyleJson : null);
 
               if (userLatLng != null) {
